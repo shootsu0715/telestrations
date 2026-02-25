@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>テレストレーション</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Hachi+Maru+Pop&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:linear-gradient(150deg,#ffecd2 0%,#fcb69f 30%,#ff9a9e 60%,#fad0c4 100%);--card:rgba(255,255,255,0.88);--primary:#ff6b6b;--primary-dark:#ee5a24;--secondary:#00b894;--accent:#6c5ce7;--text:#2d3436;--text-l:#636e72;--text-m:#b2bec3;--r:16px;--sh:0 8px 32px rgba(0,0,0,0.1)}
+body{font-family:'Zen Maru Gothic','Noto Sans JP',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:16px;overflow-x:hidden}
+.app{width:100%;max-width:640px;margin:0 auto}
+.screen{display:none;animation:slideUp .4s ease-out}.screen.active{display:flex;flex-direction:column;align-items:center}
+.card{background:var(--card);backdrop-filter:blur(20px);border-radius:24px;padding:32px;width:100%;box-shadow:var(--sh)}
+h1{font-size:36px;font-weight:900;background:linear-gradient(135deg,#e74c3c,#8e44ad,#3498db);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
+h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px}
+.sub{font-family:'Hachi Maru Pop',cursive;color:var(--text-m);font-size:14px;text-align:center}
+.btn{padding:14px 32px;border-radius:var(--r);border:none;font-size:18px;font-weight:700;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;transition:transform .12s;width:100%;display:inline-flex;justify-content:center;align-items:center;gap:8px}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-p{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 4px 15px rgba(238,90,36,.35)}
+.btn-s{background:linear-gradient(135deg,#74b9ff,#0984e3);color:#fff}.btn-ok{background:linear-gradient(135deg,var(--secondary),#00cec9);color:#fff}
+.btn-g{background:rgba(255,255,255,.7);color:var(--text-l);border:2px solid #dfe6e9}
+.inp{padding:14px 18px;border-radius:14px;border:2px solid #dfe6e9;font-size:18px;outline:none;width:100%;font-family:'Zen Maru Gothic',sans-serif;font-weight:700}.inp:focus{border-color:#74b9ff}.inp::placeholder{font-weight:400;color:var(--text-m)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700}
+.tag .offline{opacity:.4;font-size:11px;margin-left:4px}
+.notice{border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.7;background:linear-gradient(135deg,#ffeaa7,#fdcb6e);color:#636e72}
+.room-code{font-size:48px;font-weight:900;letter-spacing:12px;text-align:center;font-family:'Courier New',monospace;color:var(--accent);padding:16px;background:rgba(108,92,231,.08);border-radius:16px}
+.canvas-wrap{border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12),inset 0 0 0 3px #e0d5c1;background:#fffef5;width:100%}
+#drawCanvas{width:100%;height:400px;cursor:crosshair;touch-action:none;display:block}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.75)}
+.tdiv{width:1px;height:28px;background:#ddd}
+.cbtn{width:28px;height:28px;border-radius:50%;border:3px solid #ccc;cursor:pointer;transition:transform .12s}.cbtn.on{border-color:var(--primary);transform:scale(1.2)}
+.sbtn{width:32px;height:32px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}.sbtn.on{border-color:var(--primary);background:#fff0f0}
+.tbtn{padding:6px 10px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:16px}.tbtn.on{border-color:var(--primary);background:#fff0f0}
+.prog{width:100%;height:8px;background:#eee;border-radius:4px;overflow:hidden}.prog-fill{height:100%;background:linear-gradient(90deg,#74b9ff,#0984e3);border-radius:4px;transition:width .5s}
+.kami{position:fixed;inset:0;z-index:1000;background:#2a1810;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.kami-frame{width:100%;max-width:720px;background:linear-gradient(145deg,#8B6914,#A0822A 20%,#6B4F10 40%,#9B7520 60%,#7A5C18 80%,#8B6914);border-radius:12px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.kami-stage{background:#fffef5;border-radius:8px;min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.kami-slide{width:100%;text-align:center;padding:24px;animation:kamiSlide .5s ease-out}
+.kami-narr{color:#e8d5b0;text-align:center;margin-top:14px;font-size:16px;font-weight:700}
+.kami-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.kami-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.kami-dot.on{background:#ffeaa7;transform:scale(1.3)}.kami-dot.past{background:rgba(255,255,255,.5)}
+.kami-ctrl{display:flex;gap:12px;margin-top:14px;width:100%;max-width:720px}.kami-ctrl .btn{flex:1}
+.kami-label{font-size:14px;color:var(--text-l);margin-bottom:10px;font-weight:700}
+.kami-word{font-size:38px;font-weight:900;font-family:'Hachi Maru Pop',cursive}
+.kami-img img{max-width:100%;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.sum-card{border-radius:14px;overflow:hidden;border:2px solid #e0d5c1;background:#fff;margin-bottom:10px}
+.sum-h{padding:8px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.sum-h.t{background:linear-gradient(135deg,#ffeaa7,#fdcb6e)}.sum-h.d{background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:#fff}.sum-h.g{background:linear-gradient(135deg,#55efc4,#00b894)}
+.sum-b{padding:14px;text-align:center}.sum-b img{max-width:100%;border-radius:8px}.sum-w{font-size:26px;font-weight:900;font-family:'Hachi Maru Pop',cursive}
+.res-b{text-align:center;padding:16px;border-radius:14px;color:#fff;font-size:18px;font-weight:900;margin-bottom:14px}.res-b.ok{background:linear-gradient(135deg,#00b894,#00cec9)}.res-b.ng{background:linear-gradient(135deg,#fd79a8,#e84393)}
+.confetti{position:fixed;top:-20px;width:10px;height:10px;border-radius:2px;animation:confetti 2.5s ease-in forwards;pointer-events:none}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:2000;animation:slideUp .3s ease-out;pointer-events:none}
+.flex-r{display:flex;gap:8px;width:100%}.flex-c{display:flex;flex-direction:column;gap:12px;width:100%}
+.tc{text-align:center}.mt{margin-top:12px}.mb{margin-bottom:12px}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(500px) rotate(720deg);opacity:0}}
+@keyframes kamiSlide{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:520px){.card{padding:20px}h1{font-size:28px}.room-code{font-size:36px;letter-spacing:8px}#drawCanvas{height:300px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="screen active" id="s-home">
+    <div style="height:32px"></div>
+    <div class="card flex-c tc" style="gap:20px">
+      <div><div style="font-size:60px;animation:wiggle 2s ease-in-out infinite">🎨</div><h1>テレストレーション</h1><p class="sub mt">お絵描き伝言ゲーム</p></div>
+      <div class="notice" style="text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
+      <div class="flex-c" style="gap:12px">
+        <input class="inp" id="i-name" placeholder="あなたの名前" maxlength="10">
+        <button class="btn btn-p" onclick="doCreate()">🏠 ルームを作る</button>
+        <div class="flex-r"><input class="inp" id="i-code" placeholder="コード" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;text-align:center;flex:1"><button class="btn btn-s" onclick="doJoin()" style="width:auto;padding:14px 24px">参加</button></div>
+      </div>
+      <p id="home-err" style="color:#e74c3c;font-size:14px;display:none"></p>
+    </div>
+  </div>
+  <div class="screen" id="s-lobby"><div class="card flex-c" style="gap:16px">
+    <h2>🎮 ロビー</h2>
+    <div class="tc"><p class="sub mb">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p></div>
+    <div><p style="font-weight:700;font-size:15px;margin-bottom:8px">👥 プレイヤー <span id="l-count"></span></p><div class="tags" id="l-players"></div></div>
+    <div id="l-host" style="display:none"><button class="btn btn-p" onclick="doStart()" id="l-startbtn">🚀 ゲーム開始！</button><p id="l-msg" class="sub mt"></p></div>
+    <div id="l-wait" style="display:none"><div class="notice tc">ホストがゲーム開始するのを待っています...</div></div>
+  </div></div>
+  <div class="screen" id="s-topic"><div class="card flex-c tc" style="gap:20px">
+    <div><div style="font-size:52px">📝</div><h2>お題を入力！</h2><p class="sub">みんなに伝える言葉を決めよう</p></div>
+    <input class="inp" id="i-topic" placeholder="例：宇宙飛行士、たこ焼き..." maxlength="20" style="text-align:center;font-size:22px">
+    <button class="btn btn-p" onclick="doTopic()">🎯 決定！</button>
+  </div></div>
+  <div class="screen" id="s-topic-wait"><div class="card flex-c tc" style="gap:16px">
+    <div style="font-size:52px;animation:float 2.5s ease-in-out infinite">📝</div><h2>お題を提出しました！</h2><p class="sub">全員が提出するのを待っています...</p>
+    <div style="padding:16px"><div class="prog"><div class="prog-fill" id="topic-prog"></div></div><p class="sub mt" id="topic-prog-t"></p></div>
+  </div></div>
+  <div class="screen" id="s-draw"><div class="card flex-c" style="gap:8px;padding:16px">
+    <div class="tc"><p style="font-size:13px;color:var(--text-m)" id="d-info"></p><div style="background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:#fff;padding:8px 20px;border-radius:14px;display:inline-block;font-size:20px;font-weight:900;font-family:'Hachi Maru Pop',cursive;margin:6px 0" id="d-prompt"></div></div>
+    <div class="canvas-wrap"><canvas id="drawCanvas"></canvas></div>
+    <div class="toolbar" id="toolbar"></div>
+    <button class="btn btn-ok" onclick="doSubmitDraw()">✅ 描けた！提出する</button>
+  </div></div>
+  <div class="screen" id="s-guess"><div class="card flex-c" style="gap:14px">
+    <div class="tc"><p style="font-size:13px;color:var(--text-m)" id="g-info"></p><p style="font-weight:700;font-size:18px;margin-top:4px">この絵は何？🤔</p></div>
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)"><img id="g-image" style="width:100%;display:block" alt="絵"></div>
+    <div class="flex-r"><input class="inp" id="i-guess" placeholder="答えを入力..." maxlength="20" style="flex:1"><button class="btn btn-ok" onclick="doSubmitGuess()" style="width:auto;padding:14px 24px">📝</button></div>
+  </div></div>
+  <div class="screen" id="s-waiting"><div class="card flex-c tc" style="gap:16px">
+    <div style="font-size:52px;animation:float 2.5s ease-in-out infinite">⏳</div><h2>提出完了！</h2><p class="sub">他のプレイヤーを待っています...</p>
+    <div style="padding:16px"><div class="prog"><div class="prog-fill" id="round-prog"></div></div><p class="sub mt" id="round-prog-t"></p></div>
+  </div></div>
+  <div class="screen" id="s-complete"><div class="card flex-c tc" style="gap:20px">
+    <div style="font-size:60px;animation:wiggle 1.5s ease-in-out infinite">🎬</div><h2>全員完了！</h2><p class="sub">いよいよ結果発表です！</p>
+    <div id="c-host" style="display:none"><button class="btn btn-p" onclick="socket.emit('startReveal')">🎭 結果発表スタート！</button></div>
+    <div id="c-wait" style="display:none"><div class="notice tc">ホストが結果発表を始めます...</div></div>
+  </div></div>
+</div>
+<div class="kami" id="kami">
+  <div class="kami-frame"><div class="kami-stage" id="kami-stage"><div class="kami-slide" id="kami-slide"></div></div></div>
+  <div class="kami-narr" id="kami-narr"></div>
+  <div class="kami-dots" id="kami-dots"></div>
+  <div class="kami-ctrl" id="kami-ctrl"></div>
+</div>
+<div class="kami" id="summary" style="overflow-y:auto"><div style="width:100%;max-width:720px;padding:20px" id="sum-inner"></div></div>
+
+<script>
+// === Session ===
+var SID_KEY='telestrations_sid';
+function getSessionId(){var s=sessionStorage.getItem(SID_KEY);if(!s){s='s_'+Math.random().toString(36).substr(2,12)+'_'+Date.now();sessionStorage.setItem(SID_KEY,s);}return s;}
+var sessionId=getSessionId();
+
+var socket=io({reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:1000,reconnectionDelayMax:5000});
+var myName='',roomCode='',isHost=false;
+var canvas,ctx,drawing=false,lastPos=null,curColor='#1a1a2e',curSize=6,eraser=false,hist=[];
+var COLORS=['#1a1a2e','#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#e91e8f','#795548','#ffffff'];
+var SIZES=[3,6,12,20];
+
+// === Reconnect on socket reconnect ===
+socket.on('connect',function(){
+  if(roomCode){
+    socket.emit('reconnectSession',sessionId,function(r){
+      if(r.success){myName=r.name;roomCode=r.code;toast('♻️ 再接続しました');}
+    });
+  }
+});
+
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});var e=document.getElementById('s-'+id);if(e)e.classList.add('active');document.getElementById('kami').style.display='none';document.getElementById('summary').style.display='none';}
+function err(m){var e=document.getElementById('home-err');e.textContent=m;e.style.display='block';setTimeout(function(){e.style.display='none'},4000);}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000);}
+
+// === Home ===
+function doCreate(){var n=document.getElementById('i-name').value.trim();if(!n)return err('名前を入力');myName=n;socket.emit('createRoom',{name:n,sessionId:sessionId},function(r){if(r.success)roomCode=r.code;else err(r.error)});}
+function doJoin(){var n=document.getElementById('i-name').value.trim(),c=document.getElementById('i-code').value.trim().toUpperCase();if(!n)return err('名前を入力');if(!c)return err('コードを入力');myName=n;socket.emit('joinRoom',{name:n,code:c,sessionId:sessionId},function(r){if(r.success)roomCode=r.code;else err(r.error)});}
+
+// === Lobby ===
+socket.on('roomState',function(d){
+  roomCode=d.code;isHost=d.isHost;
+  if(d.phase==='lobby'){show('lobby');document.getElementById('l-code').textContent=d.code;
+    document.getElementById('l-count').textContent='('+d.players.length+'/8)';
+    var c=document.getElementById('l-players');c.innerHTML='';
+    var ic=['🟡','🔴','🔵','🟢','🟣','🟠','⚪','🟤'];
+    d.players.forEach(function(p,i){var t=document.createElement('div');t.className='tag';t.style.background='hsl('+(i*45)+',70%,92%)';t.style.border='2px solid hsl('+(i*45)+',60%,78%)';t.style.opacity=p.online?1:.5;t.innerHTML='<span>'+ic[i]+'</span><span>'+p.name+'</span>'+(p.name===d.hostName?'<span style="font-size:12px">👑</span>':'')+(p.online?'':'<span class="offline">⚫</span>');c.appendChild(t);});
+    document.getElementById('l-host').style.display=isHost?'block':'none';
+    document.getElementById('l-wait').style.display=isHost?'none':'block';
+    document.getElementById('l-startbtn').disabled=d.players.length<3;
+    document.getElementById('l-msg').textContent=d.players.length<3?'あと'+(3-d.players.length)+'人必要です':d.players.length+'人で遊びます';
+  }
+});
+function doStart(){socket.emit('startGame',function(r){if(!r.success)alert(r.error)});}
+
+// === Topics ===
+socket.on('enterTopic',function(){show('topic');document.getElementById('i-topic').value='';document.getElementById('i-topic').focus();});
+function doTopic(){var t=document.getElementById('i-topic').value.trim();if(!t)return;socket.emit('submitTopic',t);}
+socket.on('topicSubmitted',function(){show('topic-wait');});
+socket.on('topicProgress',function(d){document.getElementById('topic-prog').style.width=Math.round(d.submitted/d.total*100)+'%';document.getElementById('topic-prog-t').textContent=d.submitted+'/'+d.total+' 人が提出';});
+
+// === Playing ===
+socket.on('yourTurn',function(d){
+  if(d.type==='draw'){show('draw');document.getElementById('d-info').textContent='ラウンド '+d.roundNumber+'/'+d.totalRounds+(d.promptType==='topic'?' — お題を絵にしてね':' — 回答を絵にしてね');document.getElementById('d-prompt').textContent='「'+d.prompt+'」';initCanvas();}
+  else{show('guess');document.getElementById('g-info').textContent='ラウンド '+d.roundNumber+'/'+d.totalRounds;document.getElementById('g-image').src=d.prompt;document.getElementById('i-guess').value='';setTimeout(function(){document.getElementById('i-guess').focus()},100);}
+});
+function doSubmitDraw(){if(!canvas)return;socket.emit('submitDrawing',canvas.toDataURL('image/png'));}
+function doSubmitGuess(){var v=document.getElementById('i-guess').value.trim();if(!v)return;socket.emit('submitGuess',v);}
+socket.on('waitingForOthers',function(){show('waiting');});
+socket.on('roundProgress',function(d){document.getElementById('round-prog').style.width=Math.round(d.submitted/d.total*100)+'%';document.getElementById('round-prog-t').textContent=d.submitted+'/'+d.total+' 人が提出';});
+
+// === Complete ===
+socket.on('allChainsComplete',function(d){show('complete');isHost=d.isHost;document.getElementById('c-host').style.display=d.isHost?'block':'none';document.getElementById('c-wait').style.display=d.isHost?'none':'block';});
+
+// === Kamishibai ===
+var kTotal=0,kCur=0;
+
+socket.on('startChainReveal',function(d){
+  kTotal=d.totalSteps;kCur=0;
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById('kami').style.display='flex';document.getElementById('summary').style.display='none';
+  // Show topic immediately
+  var e=d.firstEntry;
+  document.getElementById('kami-slide').innerHTML='<div style="animation:kamiSlide .5s ease-out"><p class="kami-label">📌 '+esc(e.playerName)+' のお題</p><p class="kami-word" style="font-size:44px">'+esc(e.content)+'</p></div>';
+  document.getElementById('kami-narr').textContent=(d.chainIdx+1)+'/'+d.totalChains+' — '+esc(e.playerName)+'さんのお題「'+e.content+'」！';
+  buildDots();
+  document.getElementById('kami-ctrl').innerHTML=d.isHost?'<button class="btn btn-p" onclick="socket.emit(\'nextRevealStep\')">👆 次をめくる！</button>':'';
+});
+
+socket.on('revealStep',function(d){
+  kCur=d.stepIdx;buildDots();
+  var sl=document.getElementById('kami-slide'),nr=document.getElementById('kami-narr'),ct=document.getElementById('kami-ctrl');
+  var h='<div style="animation:kamiSlide .5s ease-out">';
+  if(d.entry.type==='drawing'){h+='<p class="kami-label">🎨 '+esc(d.entry.playerName)+' さんの絵</p><div class="kami-img"><img src="'+d.entry.content+'" alt="drawing"></div>';nr.textContent=d.entry.playerName+'さんが描きました！';}
+  else if(d.entry.type==='guess'){h+='<p class="kami-label">💬 '+esc(d.entry.playerName)+' さんの回答</p><p class="kami-word" style="color:var(--accent)">'+esc(d.entry.content)+'</p>';nr.textContent=d.entry.playerName+'さんの答え…「'+d.entry.content+'」！';}
+  else{h+='<p class="kami-label">📌 '+esc(d.entry.playerName)+' のお題</p><p class="kami-word">'+esc(d.entry.content)+'</p>';nr.textContent='お題は「'+d.entry.content+'」！';}
+  h+='</div>';sl.innerHTML=h;ct.innerHTML='';
+  if(d.isHost){
+    if(!d.isLast)ct.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'nextRevealStep\')">👆 次をめくる！</button>';
+    else{
+      var o=d.originalTopic,l=d.entry.content;
+      if(d.entry.type==='guess'){var m=l===o||l.indexOf(o)>=0||o.indexOf(l)>=0;nr.textContent=m?'🎉 すごい！「'+o+'」→「'+l+'」伝わった！':'😂 「'+o+'」が「'+l+'」に変身！';}
+      ct.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'nextRevealStep\')">👆 次へ</button>';
+      spawnConfetti();
+    }
+  } else if(d.isLast&&d.entry.type==='guess'){var o2=d.originalTopic,l2=d.entry.content;var m2=l2===o2||l2.indexOf(o2)>=0||o2.indexOf(l2)>=0;nr.textContent=m2?'🎉 すごい！「'+o2+'」→「'+l2+'」伝わった！':'😂 「'+o2+'」が「'+l2+'」に変身！';}
+});
+
+socket.on('chainComplete',function(d){
+  var nr=document.getElementById('kami-narr'),ct=document.getElementById('kami-ctrl');
+  if(d.hasMoreChains){nr.textContent='次のお題へ！';ct.innerHTML=d.isHost?'<button class="btn btn-s" onclick="socket.emit(\'nextChain\')">📖 次のお題へ！</button>':'';}
+  else{nr.textContent='全員分の発表が終わりました！';ct.innerHTML=d.isHost?'<button class="btn btn-s" onclick="socket.emit(\'nextChain\')">📊 まとめを見る</button>':'';}
+});
+
+socket.on('allRevealed',function(d){
+  document.getElementById('kami').style.display='none';var s=document.getElementById('summary');s.style.display='flex';
+  var inner=document.getElementById('sum-inner');
+  inner.innerHTML='<h2 style="color:#ffeaa7;font-size:28px;margin-bottom:20px;text-align:center">📖 結果まとめ</h2>';
+  d.chains.forEach(function(chain){
+    var sec=document.createElement('div');sec.style.marginBottom='24px';
+    sec.innerHTML='<p style="color:#ffeaa7;font-weight:900;font-size:16px;margin-bottom:10px">🎯 '+esc(chain.topicPlayerName)+' さんのお題</p>';
+    var orig=chain.entries[0].content,last=chain.entries[chain.entries.length-1];
+    if(last.type==='guess'){var match=last.content===orig||last.content.indexOf(orig)>=0||orig.indexOf(last.content)>=0;var b=document.createElement('div');b.className='res-b '+(match?'ok':'ng');b.textContent=match?'🎉 伝わった！「'+orig+'」':'😂 「'+orig+'」→「'+last.content+'」';sec.appendChild(b);}
+    chain.entries.forEach(function(e,i){
+      var card=document.createElement('div');card.className='sum-card';
+      var hc=e.type==='topic'?'t':e.type==='drawing'?'d':'g';
+      var ic=e.type==='topic'?'📌':e.type==='drawing'?'🎨':'💬';
+      var lb=e.type==='topic'?esc(e.playerName)+' のお題':e.type==='drawing'?esc(e.playerName)+' が描いた':esc(e.playerName)+' の回答';
+      var bd=e.type==='drawing'?'<img src="'+e.content+'" style="max-width:100%">':'<span class="sum-w">'+esc(e.content)+'</span>';
+      card.innerHTML='<div class="sum-h '+hc+'"><span>'+ic+'</span><span>'+lb+'</span></div><div class="sum-b">'+bd+'</div>';
+      sec.appendChild(card);
+      if(i<chain.entries.length-1){var a=document.createElement('div');a.style.cssText='text-align:center;font-size:20px;margin:4px 0;opacity:.4;color:#ffeaa7';a.textContent='⬇️';sec.appendChild(a);}
+    });
+    inner.appendChild(sec);
+  });
+  if(d.isHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
+});
+
+function buildDots(){var dots=document.getElementById('kami-dots');dots.innerHTML='';for(var i=0;i<kTotal;i++){var d=document.createElement('div');d.className='kami-dot'+(i===kCur?' on':i<kCur?' past':'');dots.appendChild(d);}}
+
+// === Canvas ===
+function initCanvas(){
+  canvas=document.getElementById('drawCanvas');
+  var wrap=canvas.parentElement;
+  var newC=document.createElement('canvas');newC.id='drawCanvas';newC.style.cssText=canvas.style.cssText;
+  wrap.replaceChild(newC,canvas);canvas=newC;
+  ctx=canvas.getContext('2d');
+  var w=wrap.getBoundingClientRect().width,h=parseInt(getComputedStyle(canvas).height);
+  canvas.width=w*2;canvas.height=h*2;ctx.scale(2,2);
+  ctx.fillStyle='#fffef5';ctx.fillRect(0,0,w,h);
+  hist=[canvas.toDataURL()];curColor='#1a1a2e';curSize=6;eraser=false;
+  buildToolbar();
+  canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);canvas.addEventListener('mouseleave',onUp);
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();onDown(e)},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();onMove(e)},{passive:false});
+  canvas.addEventListener('touchend',function(e){e.preventDefault();onUp()},{passive:false});
+}
+function buildToolbar(){
+  var tb=document.getElementById('toolbar');tb.innerHTML='';
+  var cp=document.createElement('div');cp.style.cssText='display:flex;gap:4px;flex-wrap:wrap;justify-content:center';
+  COLORS.forEach(function(c){var b=document.createElement('button');b.className='cbtn'+(c===curColor&&!eraser?' on':'');b.style.background=c;if(c==='#ffffff')b.style.boxShadow='inset 0 0 0 1px #ddd';b.onclick=function(){curColor=c;eraser=false;tb.querySelectorAll('.cbtn').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.getElementById('btn-er').classList.remove('on');};cp.appendChild(b);});
+  tb.appendChild(cp);
+  var d1=document.createElement('div');d1.className='tdiv';tb.appendChild(d1);
+  var sp=document.createElement('div');sp.style.cssText='display:flex;gap:4px;align-items:center';
+  SIZES.forEach(function(s){var b=document.createElement('button');b.className='sbtn'+(s===curSize?' on':'');var dot=document.createElement('div');dot.style.cssText='width:'+Math.min(s+2,18)+'px;height:'+Math.min(s+2,18)+'px;border-radius:50%;background:#333';b.appendChild(dot);b.onclick=function(){curSize=s;tb.querySelectorAll('.sbtn').forEach(function(x){x.classList.remove('on')});b.classList.add('on');};sp.appendChild(b);});
+  tb.appendChild(sp);
+  var d2=document.createElement('div');d2.className='tdiv';tb.appendChild(d2);
+  var be=document.createElement('button');be.className='tbtn';be.id='btn-er';be.textContent='🧹';be.onclick=function(){eraser=!eraser;be.classList.toggle('on',eraser);};tb.appendChild(be);
+  var bu=document.createElement('button');bu.className='tbtn';bu.textContent='↩️';bu.onclick=function(){if(hist.length<2)return;hist.pop();var img=new Image();img.onload=function(){ctx.clearRect(0,0,canvas.width/2,canvas.height/2);ctx.drawImage(img,0,0,canvas.width/2,canvas.height/2);};img.src=hist[hist.length-1];};tb.appendChild(bu);
+  var bc=document.createElement('button');bc.className='tbtn';bc.textContent='🗑️';bc.onclick=function(){ctx.fillStyle='#fffef5';ctx.fillRect(0,0,canvas.width/2,canvas.height/2);hist.push(canvas.toDataURL());};tb.appendChild(bc);
+}
+function getPos(e){var r=canvas.getBoundingClientRect();return{x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,y:(e.touches?e.touches[0].clientY:e.clientY)-r.top};}
+function dSz(){return eraser?curSize*3:curSize;}
+function onDown(e){drawing=true;lastPos=getPos(e);ctx.beginPath();ctx.arc(lastPos.x,lastPos.y,dSz()/2,0,Math.PI*2);ctx.fillStyle=eraser?'#fffef5':curColor;ctx.fill();}
+function onMove(e){if(!drawing)return;var p=getPos(e);ctx.beginPath();ctx.moveTo(lastPos.x,lastPos.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle=eraser?'#fffef5':curColor;ctx.lineWidth=dSz();ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lastPos=p;}
+function onUp(){if(drawing){drawing=false;hist.push(canvas.toDataURL());if(hist.length>30)hist.shift();}}
+
+// === Notifications ===
+socket.on('playerWentOffline',function(d){toast('⚠️ '+d.name+' が切断 ('+d.onlineCount+'人接続中)');});
+socket.on('playerReconnected',function(d){toast('✅ '+d.name+' が再接続');});
+socket.on('playerDisconnected',function(d){alert(d.message);});
+
+function spawnConfetti(){for(var i=0;i<25;i++){var c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*100+'%';c.style.background='hsl('+Math.random()*360+',80%,60%)';c.style.animationDuration=(2+Math.random()*2)+'s';c.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(c);setTimeout(function(){c.remove()},5000);}}
+document.getElementById('i-name').addEventListener('keydown',function(e){if(e.key==='Enter'){var c=document.getElementById('i-code').value.trim();if(c)doJoin();else doCreate();}});
+document.getElementById('i-code').addEventListener('keydown',function(e){if(e.key==='Enter')doJoin()});
+document.getElementById('i-topic').addEventListener('keydown',function(e){if(e.key==='Enter')doTopic()});
+document.getElementById('i-guess').addEventListener('keydown',function(e){if(e.key==='Enter')doSubmitGuess()});
+</script>
+</body>
+</html>
