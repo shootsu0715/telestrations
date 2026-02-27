@@ -3,150 +3,331 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>テレストレーション</title>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Hachi+Maru+Pop&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<title>The画伯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Hachi+Maru+Pop&display=swap" rel="stylesheet">
 <script src="/socket.io/socket.io.js"></script>
 <style>
+/* ── リセット & カラーシステム ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:linear-gradient(150deg,#ffecd2 0%,#fcb69f 30%,#ff9a9e 60%,#fad0c4 100%);--card:rgba(255,255,255,0.88);--primary:#ff6b6b;--primary-dark:#ee5a24;--secondary:#00b894;--accent:#6c5ce7;--text:#2d3436;--text-l:#636e72;--text-m:#b2bec3;--r:16px;--sh:0 8px 32px rgba(0,0,0,0.1)}
-body{font-family:'Zen Maru Gothic','Noto Sans JP',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:16px;overflow-x:hidden}
-.app{width:100%;max-width:640px;margin:0 auto}
+:root{
+  --bg:#faf7f2;--card:#faf7f2;--border:#e8e2d9;--soft:#f5f0e8;
+  --primary:#8b6aae;--primary-light:#ece4f5;
+  --accent:#f5a623;--accent-light:#fff4e0;
+  --danger:#e8636a;--success:#5cb87a;
+  --text:#3d3535;--text-l:#8a807a;--text-m:#b5ada6;
+  --r:16px;--sh:0 2px 12px rgba(0,0,0,0.04)
+}
+body{font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro','BIZ UDGothic','Rounded Mplus 1c',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:16px;overflow-x:hidden}
+.app{width:100%;max-width:640px;margin:0 auto;position:relative;overflow-x:hidden}
+.app>*:not(.bg-sticker){position:relative;z-index:1}
 .screen{display:none;animation:slideUp .4s ease-out}.screen.active{display:flex;flex-direction:column;align-items:center}
-.card{background:var(--card);backdrop-filter:blur(20px);border-radius:24px;padding:32px;width:100%;box-shadow:var(--sh)}
-h1{font-size:36px;font-weight:900;background:linear-gradient(135deg,#e74c3c,#8e44ad,#3498db);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
-h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px}
+
+/* ── カード & 基本要素 ── */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:28px;width:100%;box-shadow:var(--sh)}
+h1{font-size:36px;font-weight:900;color:var(--primary);text-align:center;letter-spacing:2px}
+h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var(--text)}
 .sub{font-family:'Hachi Maru Pop',cursive;color:var(--text-m);font-size:14px;text-align:center}
+
+/* ── ボタン ── */
 .btn{padding:14px 32px;border-radius:var(--r);border:none;font-size:18px;font-weight:700;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;transition:transform .12s;width:100%;display:inline-flex;justify-content:center;align-items:center;gap:8px}
 .btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-p{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 4px 15px rgba(238,90,36,.35)}
-.btn-s{background:linear-gradient(135deg,#74b9ff,#0984e3);color:#fff}.btn-ok{background:linear-gradient(135deg,var(--secondary),#00cec9);color:#fff}
-.btn-g{background:rgba(255,255,255,.7);color:var(--text-l);border:2px solid #dfe6e9}
-.inp{padding:14px 18px;border-radius:14px;border:2px solid #dfe6e9;font-size:18px;outline:none;width:100%;font-family:'Zen Maru Gothic',sans-serif;font-weight:700}.inp:focus{border-color:#74b9ff}.inp::placeholder{font-weight:400;color:var(--text-m)}
-.tags{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700}
+.btn-p{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(139,106,174,0.2)}
+.btn-s{background:linear-gradient(135deg,#a29bfe,#8b6aae);color:#fff}
+.btn-ok{background:var(--success);color:#fff}
+.btn-g{background:var(--soft);color:var(--text-l);border:1.5px solid var(--border)}
+
+/* ── 入力 ── */
+.inp{padding:14px 18px;border-radius:14px;border:2px solid var(--border);font-size:18px;outline:none;width:100%;font-family:'Zen Maru Gothic',sans-serif;font-weight:700;background:var(--soft);color:var(--text)}
+.inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(139,106,174,0.15)}
+.inp::placeholder{font-weight:400;color:var(--text-m)}
+
+/* ── タグ & 通知 ── */
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;border:1.5px solid var(--border)}
 .tag .offline{opacity:.4;font-size:11px;margin-left:4px}
-.notice{border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.7;background:linear-gradient(135deg,#ffeaa7,#fdcb6e);color:#636e72}
-.room-code{font-size:48px;font-weight:900;letter-spacing:12px;text-align:center;font-family:'Courier New',monospace;color:var(--accent);padding:16px;background:rgba(108,92,231,.08);border-radius:16px}
-.canvas-wrap{border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12),inset 0 0 0 3px #e0d5c1;background:#fffef5;width:100%}
+.notice{border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.7;background:var(--accent-light);color:var(--text-l);border:1.5px solid rgba(245,166,35,0.15)}
+.room-code{font-size:48px;font-weight:900;letter-spacing:12px;text-align:center;font-family:'Courier New',monospace;color:var(--accent);padding:16px;background:var(--accent-light);border:2px dashed rgba(245,166,35,0.3);border-radius:16px}
+
+/* ── キャンバス & ツールバー ── */
+.canvas-wrap{border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1.5px solid var(--border);background:#fffef5;width:100%}
 #drawCanvas{width:100%;height:400px;cursor:crosshair;touch-action:none;display:block}
-.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.75)}
-.tdiv{width:1px;height:28px;background:#ddd}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:10px;border-radius:14px;background:var(--soft)}
+.tdiv{width:1px;height:28px;background:var(--border)}
 .cbtn{width:28px;height:28px;border-radius:50%;border:3px solid #ccc;cursor:pointer;transition:transform .12s}.cbtn.on{border-color:var(--primary);transform:scale(1.2)}
-.sbtn{width:32px;height:32px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}.sbtn.on{border-color:var(--primary);background:#fff0f0}
-.tbtn{padding:6px 10px;border-radius:10px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:16px}.tbtn.on{border-color:var(--primary);background:#fff0f0}
-.prog{width:100%;height:8px;background:#eee;border-radius:4px;overflow:hidden}.prog-fill{height:100%;background:linear-gradient(90deg,#74b9ff,#0984e3);border-radius:4px;transition:width .5s}
-.kami{position:fixed;inset:0;z-index:1000;background:#2a1810;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
-.kami-frame{width:100%;max-width:720px;background:linear-gradient(145deg,#8B6914,#A0822A 20%,#6B4F10 40%,#9B7520 60%,#7A5C18 80%,#8B6914);border-radius:12px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.sbtn{width:32px;height:32px;border-radius:10px;border:2px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}.sbtn.on{border-color:var(--primary);background:var(--primary-light)}
+.tbtn{padding:6px 10px;border-radius:10px;border:2px solid var(--border);background:#fff;cursor:pointer;font-size:16px}.tbtn.on{border-color:var(--primary);background:var(--primary-light)}
+
+/* ── プログレスバー ── */
+.prog{width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:4px;transition:width .5s}
+
+/* ── 紙芝居（結果発表） ── */
+.kami{position:fixed;inset:0;z-index:1000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.kami-frame{width:100%;max-width:720px;background:linear-gradient(145deg,#d4c4a8,#e8dcc8 20%,#c4b498 40%,#ddd0b8 60%,#c8bc98 80%,#d4c4a8);border-radius:12px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
 .kami-stage{background:#fffef5;border-radius:8px;min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
 .kami-slide{width:100%;text-align:center;padding:24px;animation:kamiSlide .5s ease-out}
-.kami-narr{color:#e8d5b0;text-align:center;margin-top:14px;font-size:16px;font-weight:700}
+.kami-narr{color:var(--text-l);text-align:center;margin-top:14px;font-size:16px;font-weight:700}
 .kami-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
-.kami-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.kami-dot.on{background:#ffeaa7;transform:scale(1.3)}.kami-dot.past{background:rgba(255,255,255,.5)}
+.kami-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .3s}.kami-dot.on{background:var(--accent);transform:scale(1.3)}.kami-dot.past{background:var(--text-m)}
 .kami-ctrl{display:flex;gap:12px;margin-top:14px;width:100%;max-width:720px}.kami-ctrl .btn{flex:1}
 .kami-label{font-size:14px;color:var(--text-l);margin-bottom:10px;font-weight:700}
-.kami-word{font-size:38px;font-weight:900;font-family:'Hachi Maru Pop',cursive}
-.kami-img img{max-width:100%;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
-.sum-card{border-radius:14px;overflow:hidden;border:2px solid #e0d5c1;background:#fff;margin-bottom:10px}
-.sum-h{padding:8px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.sum-h.t{background:linear-gradient(135deg,#ffeaa7,#fdcb6e)}.sum-h.d{background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:#fff}.sum-h.g{background:linear-gradient(135deg,#55efc4,#00b894)}
-.sum-b{padding:14px;text-align:center}.sum-b img{max-width:100%;border-radius:8px}.sum-w{font-size:26px;font-weight:900;font-family:'Hachi Maru Pop',cursive}
-.res-b{text-align:center;padding:16px;border-radius:14px;color:#fff;font-size:18px;font-weight:900;margin-bottom:14px}.res-b.ok{background:linear-gradient(135deg,#00b894,#00cec9)}.res-b.ng{background:linear-gradient(135deg,#fd79a8,#e84393)}
+.kami-word{font-size:38px;font-weight:900;font-family:'Hachi Maru Pop',cursive;color:var(--text)}
+.kami-img img{max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+/* ── 結果まとめカード ── */
+.sum-card{border-radius:14px;overflow:hidden;border:1.5px solid var(--border);background:#fff;margin-bottom:10px}
+.sum-h{padding:8px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.sum-h.t{background:var(--accent-light);color:var(--accent)}
+.sum-h.d{background:var(--primary-light);color:var(--primary)}
+.sum-h.g{background:linear-gradient(135deg,#e8f8f0,#d4f0e0);color:var(--success)}
+.sum-b{padding:14px;text-align:center}.sum-b img{max-width:100%;border-radius:8px}
+.sum-w{font-size:26px;font-weight:900;font-family:'Hachi Maru Pop',cursive;color:var(--text)}
+.res-b{text-align:center;padding:16px;border-radius:14px;color:#fff;font-size:18px;font-weight:900;margin-bottom:14px}
+.res-b.ok{background:var(--success)}.res-b.ng{background:var(--danger)}
+
+/* ── エフェクト & トースト ── */
 .confetti{position:fixed;top:-20px;width:10px;height:10px;border-radius:2px;animation:confetti 2.5s ease-in forwards;pointer-events:none}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:2000;animation:slideUp .3s ease-out;pointer-events:none}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:2000;animation:slideUp .3s ease-out;pointer-events:none}
+
 /* ── 共有ボタンエリア ── */
 .share-area{display:flex;flex-direction:column;gap:8px;margin-top:16px;width:100%}
 .btn-share{width:100%;padding:14px;border-radius:var(--r);font-size:18px;font-weight:bold;color:#fff;
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--primary);display:flex;align-items:center;justify-content:center;gap:8px;
   position:relative;overflow:hidden;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
 .btn-share:hover{filter:brightness(1.1)}.btn-share:disabled{opacity:.5;cursor:not-allowed;filter:none}
 .btn-share::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%);pointer-events:none}
 .share-row{display:flex;gap:8px;width:100%}
-.btn-line{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
-  background:#06C755;display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
-.btn-line:hover{filter:brightness(1.1)}
-.btn-mail{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
-  background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
-.btn-mail:hover{filter:brightness(1.1)}
+.btn-gmail{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
+  background:linear-gradient(135deg,#ea4335,#d93025);display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-gmail:hover{filter:brightness(1.1)}
+.sum-nav{display:flex;gap:12px;justify-content:center;align-items:center;margin:16px 0}
+.sum-page{color:var(--primary);font-size:16px;font-weight:700}
 .btn-download{width:100%;padding:11px;border-radius:var(--r);font-size:15px;font-weight:600;
-  color:#6c5ce7;background:rgba(108,92,231,.12);border:2px solid rgba(108,92,231,.3);
+  color:var(--primary);background:var(--primary-light);border:1.5px solid rgba(139,106,174,0.2);
   display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
-.btn-download:hover{background:rgba(108,92,231,.22)}
+.btn-download:hover{background:rgba(139,106,174,.15)}
 .share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
-  background:#00b894;color:#fff;padding:12px 24px;border-radius:14px;font-weight:bold;
+  background:var(--success);color:#fff;padding:12px 24px;border-radius:14px;font-weight:bold;
   font-size:15px;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);z-index:2001;
-  box-shadow:0 8px 32px rgba(0,184,148,.3);pointer-events:none;font-family:'Zen Maru Gothic',sans-serif}
+  box-shadow:0 4px 16px rgba(92,184,122,.3);pointer-events:none;font-family:'Zen Maru Gothic',sans-serif}
 .share-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── キャラクター & スティッカー ── */
+.chara{display:inline-block;object-fit:contain;pointer-events:none}
+.bg-sticker{position:absolute;pointer-events:none;z-index:0;object-fit:contain}
+
+/* ── ユーティリティ ── */
 .flex-r{display:flex;gap:8px;width:100%}.flex-c{display:flex;flex-direction:column;gap:12px;width:100%}
 .tc{text-align:center}.mt{margin-top:12px}.mb{margin-bottom:12px}
+
+/* ── アニメーション ── */
 @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(500px) rotate(720deg);opacity:0}}
 @keyframes kamiSlide{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── レスポンシブ ── */
 @media(max-width:520px){.card{padding:20px}h1{font-size:28px}.room-code{font-size:36px;letter-spacing:8px}#drawCanvas{height:300px}}
 </style>
 </head>
 <body>
 <div class="app">
+  <!-- ── ホーム画面 ── -->
   <div class="screen active" id="s-home">
-    <div style="height:32px"></div>
+    <div style="height:24px"></div>
     <div class="card flex-c tc" style="gap:20px">
-      <div><div style="font-size:60px;animation:wiggle 2s ease-in-out infinite">🎨</div><h1>テレストレーション</h1><p class="sub mt">お絵描き伝言ゲーム</p></div>
+      <div>
+        <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:130px;margin-bottom:8px">
+        <h1>The画伯</h1>
+        <p class="sub mt">お絵描き伝言ゲーム</p>
+      </div>
       <div class="notice" style="text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
       <div class="flex-c" style="gap:12px">
         <input class="inp" id="i-name" placeholder="あなたの名前" maxlength="10">
         <button class="btn btn-p" onclick="doCreate()">🏠 ルームを作る</button>
         <div class="flex-r"><input class="inp" id="i-code" placeholder="コード" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;text-align:center;flex:1"><button class="btn btn-s" onclick="doJoin()" style="width:auto;padding:14px 24px">参加</button></div>
       </div>
-      <p id="home-err" style="color:#e74c3c;font-size:14px;display:none"></p>
+      <p id="home-err" style="color:var(--danger);font-size:14px;display:none"></p>
     </div>
   </div>
+
+  <!-- ── ロビー ── -->
   <div class="screen" id="s-lobby"><div class="card flex-c" style="gap:16px">
     <h2>🎮 ロビー</h2>
-    <div class="tc"><p class="sub mb">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p></div>
+    <div class="tc">
+      <img class="chara" data-chara="together" src="images/chara-together.png" style="width:110px;margin-bottom:8px">
+      <p class="sub mb">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p>
+    </div>
     <div><p style="font-weight:700;font-size:15px;margin-bottom:8px">👥 プレイヤー <span id="l-count"></span></p><div class="tags" id="l-players"></div></div>
     <div id="l-host" style="display:none"><button class="btn btn-p" onclick="doStart()" id="l-startbtn">🚀 ゲーム開始！</button><p id="l-msg" class="sub mt"></p></div>
     <div id="l-wait" style="display:none"><div class="notice tc">ホストがゲーム開始するのを待っています...</div></div>
   </div></div>
+
+  <!-- ── お題入力 ── -->
   <div class="screen" id="s-topic"><div class="card flex-c tc" style="gap:20px">
-    <div><div style="font-size:52px">📝</div><h2>お題を入力！</h2><p class="sub">みんなに伝える言葉を決めよう</p></div>
+    <div>
+      <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:80px;margin-bottom:4px">
+      <h2>お題を入力！</h2><p class="sub">みんなに伝える言葉を決めよう</p>
+    </div>
     <input class="inp" id="i-topic" placeholder="例：宇宙飛行士、たこ焼き..." maxlength="20" style="text-align:center;font-size:22px">
     <button class="btn btn-p" onclick="doTopic()">🎯 決定！</button>
   </div></div>
+
+  <!-- ── お題待機 ── -->
   <div class="screen" id="s-topic-wait"><div class="card flex-c tc" style="gap:16px">
-    <div style="font-size:52px;animation:float 2.5s ease-in-out infinite">📝</div><h2>お題を提出しました！</h2><p class="sub">全員が提出するのを待っています...</p>
+    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:80px;animation:float 2.5s ease-in-out infinite">
+    <h2>お題を提出しました！</h2><p class="sub">全員が提出するのを待っています...</p>
     <div style="padding:16px"><div class="prog"><div class="prog-fill" id="topic-prog"></div></div><p class="sub mt" id="topic-prog-t"></p></div>
   </div></div>
+
+  <!-- ── お絵描き ── -->
   <div class="screen" id="s-draw"><div class="card flex-c" style="gap:8px;padding:16px">
-    <div class="tc"><p style="font-size:13px;color:var(--text-m)" id="d-info"></p><div style="background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:#fff;padding:8px 20px;border-radius:14px;display:inline-block;font-size:20px;font-weight:900;font-family:'Hachi Maru Pop',cursive;margin:6px 0" id="d-prompt"></div></div>
+    <div class="tc">
+      <p style="font-size:13px;color:var(--text-l)" id="d-info"></p>
+      <div style="display:inline-flex;align-items:center;gap:10px;background:var(--accent-light);border:1.5px solid rgba(245,166,35,0.2);border-radius:14px;padding:8px 16px;margin:6px 0">
+        <img class="chara" data-chara="peek" src="images/chara-peek.png" style="width:50px">
+        <span id="d-prompt" style="font-size:20px;font-weight:900;font-family:'Hachi Maru Pop',cursive;color:var(--accent)"></span>
+      </div>
+    </div>
     <div class="canvas-wrap"><canvas id="drawCanvas"></canvas></div>
     <div class="toolbar" id="toolbar"></div>
     <button class="btn btn-ok" onclick="doSubmitDraw()">✅ 描けた！提出する</button>
   </div></div>
+
+  <!-- ── 回答 ── -->
   <div class="screen" id="s-guess"><div class="card flex-c" style="gap:14px">
-    <div class="tc"><p style="font-size:13px;color:var(--text-m)" id="g-info"></p><p style="font-weight:700;font-size:18px;margin-top:4px">この絵は何？🤔</p></div>
-    <div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)"><img id="g-image" style="width:100%;display:block" alt="絵"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+      <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:60px">
+      <div class="tc"><p style="font-size:13px;color:var(--text-l)" id="g-info"></p><p style="font-weight:700;font-size:18px;margin-top:4px">この絵は何？🤔</p></div>
+    </div>
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1.5px solid var(--border)"><img id="g-image" style="width:100%;display:block" alt="絵"></div>
     <div class="flex-r"><input class="inp" id="i-guess" placeholder="答えを入力..." maxlength="20" style="flex:1"><button class="btn btn-ok" onclick="doSubmitGuess()" style="width:auto;padding:14px 24px">📝</button></div>
   </div></div>
+
+  <!-- ── 待機中 ── -->
   <div class="screen" id="s-waiting"><div class="card flex-c tc" style="gap:16px">
-    <div style="font-size:52px;animation:float 2.5s ease-in-out infinite">⏳</div><h2>提出完了！</h2><p class="sub">他のプレイヤーを待っています...</p>
+    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:100px;animation:float 2.5s ease-in-out infinite">
+    <h2>提出完了！</h2><p class="sub">他のプレイヤーを待っています...</p>
     <div style="padding:16px"><div class="prog"><div class="prog-fill" id="round-prog"></div></div><p class="sub mt" id="round-prog-t"></p></div>
   </div></div>
+
+  <!-- ── 全員完了 ── -->
   <div class="screen" id="s-complete"><div class="card flex-c tc" style="gap:20px">
-    <div style="font-size:60px;animation:wiggle 1.5s ease-in-out infinite">🎬</div><h2>全員完了！</h2><p class="sub">いよいよ結果発表です！</p>
+    <img class="chara" data-chara="together" src="images/chara-together.png" style="width:110px;animation:wiggle 1.5s ease-in-out infinite">
+    <h2>全員完了！</h2><p class="sub">いよいよ結果発表です！</p>
     <div id="c-host" style="display:none"><button class="btn btn-p" onclick="socket.emit('startReveal')">🎭 結果発表スタート！</button></div>
     <div id="c-wait" style="display:none"><div class="notice tc">ホストが結果発表を始めます...</div></div>
   </div></div>
 </div>
+
+<!-- ── 紙芝居オーバーレイ ── -->
 <div class="kami" id="kami">
   <div class="kami-frame"><div class="kami-stage" id="kami-stage"><div class="kami-slide" id="kami-slide"></div></div></div>
   <div class="kami-narr" id="kami-narr"></div>
   <div class="kami-dots" id="kami-dots"></div>
   <div class="kami-ctrl" id="kami-ctrl"></div>
 </div>
+
+<!-- ── 結果まとめオーバーレイ ── -->
 <div class="kami" id="summary" style="overflow-y:auto"><div style="width:100%;max-width:720px;padding:20px" id="sum-inner"></div></div>
 <div class="share-toast" id="shareToast"></div>
 
 <script>
+// ── キャラクター画像の白背景除去 ──
+var charaCache={};
+function removeWhiteBg(imgSrc,callback){
+  if(charaCache[imgSrc]){callback(charaCache[imgSrc]);return;}
+  var img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=function(){
+    var c=document.createElement('canvas');c.width=img.width;c.height=img.height;
+    var ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+    var d=ctx.getImageData(0,0,c.width,c.height),p=d.data;
+    for(var i=0;i<p.length;i+=4){
+      var r=p[i],g=p[i+1],b=p[i+2];
+      var brightness=(r+g+b)/3;
+      var maxC=Math.max(r,g,b),minC=Math.min(r,g,b);
+      var saturation=maxC>0?(maxC-minC)/maxC:0;
+      if(brightness>235&&saturation<0.08){p[i+3]=0;}
+      else if(brightness>215&&saturation<0.12){var fade=(brightness-215)/20;p[i+3]=Math.round(p[i+3]*(1-fade));}
+    }
+    ctx.putImageData(d,0,0);
+    var result=c.toDataURL('image/png');
+    charaCache[imgSrc]=result;
+    callback(result);
+  };
+  img.onerror=function(){};
+  img.src=imgSrc;
+}
+
+function processCharaImages(){
+  var imgs=document.querySelectorAll('img[data-chara]:not([data-processed])');
+  for(var i=0;i<imgs.length;i++){
+    (function(img){
+      img.setAttribute('data-processed','1');
+      removeWhiteBg(img.src,function(dataUrl){img.src=dataUrl;});
+    })(imgs[i]);
+  }
+}
+
+// ── スティッカー切り出し & 白除去 ──
+var stickerCache={};
+function cropAndCleanSticker(sheetSrc,col,row,callback){
+  var key=sheetSrc+'_'+col+'_'+row;
+  if(stickerCache[key]){callback(stickerCache[key]);return;}
+  var img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=function(){
+    var cellW=img.width/4,cellH=img.height/3;
+    var c=document.createElement('canvas');c.width=cellW;c.height=cellH;
+    var ctx=c.getContext('2d');
+    ctx.drawImage(img,col*cellW,row*cellH,cellW,cellH,0,0,cellW,cellH);
+    var d=ctx.getImageData(0,0,c.width,c.height),p=d.data;
+    for(var i=0;i<p.length;i+=4){
+      var r=p[i],g=p[i+1],b=p[i+2];
+      var brightness=(r+g+b)/3;
+      var maxC=Math.max(r,g,b),minC=Math.min(r,g,b);
+      var saturation=maxC>0?(maxC-minC)/maxC:0;
+      if(brightness>235&&saturation<0.08){p[i+3]=0;}
+      else if(brightness>215&&saturation<0.12){var fade=(brightness-215)/20;p[i+3]=Math.round(p[i+3]*(1-fade));}
+    }
+    ctx.putImageData(d,0,0);
+    var result=c.toDataURL('image/png');
+    stickerCache[key]=result;
+    callback(result);
+  };
+  img.onerror=function(){};
+  img.src=sheetSrc;
+}
+
+function renderScatteredStickers(){
+  var appEl=document.querySelector('.app');
+  var defs=[
+    {sheet:'images/sticker-sheet1.jpg',col:0,row:0,size:65,opacity:0.15,top:60,left:-5,rotate:-12},
+    {sheet:'images/sticker-sheet2.jpg',col:1,row:0,size:55,opacity:0.13,top:180,right:-3,rotate:8},
+    {sheet:'images/sticker-sheet1.jpg',col:2,row:1,size:50,opacity:0.14,top:350,left:0,rotate:-6},
+    {sheet:'images/sticker-sheet2.jpg',col:3,row:2,size:60,opacity:0.16,top:500,right:0,rotate:15},
+    {sheet:'images/sticker-sheet1.jpg',col:1,row:2,size:48,opacity:0.12,top:650,left:5,rotate:-10},
+    {sheet:'images/sticker-sheet2.jpg',col:0,row:1,size:55,opacity:0.15,top:800,right:5,rotate:5},
+    {sheet:'images/sticker-sheet1.jpg',col:3,row:0,size:52,opacity:0.13,top:420,right:-2,rotate:12},
+    {sheet:'images/sticker-sheet2.jpg',col:2,row:2,size:58,opacity:0.14,top:250,left:-4,rotate:-8}
+  ];
+  defs.forEach(function(def){
+    cropAndCleanSticker(def.sheet,def.col,def.row,function(dataUrl){
+      var el=document.createElement('img');el.className='bg-sticker';el.src=dataUrl;
+      var pos='position:absolute;pointer-events:none;z-index:0;width:'+def.size+'px;height:'+def.size+'px;object-fit:contain;opacity:'+def.opacity+';top:'+def.top+'px;';
+      if(def.left!=null)pos+='left:'+def.left+'px;';
+      if(def.right!=null)pos+='right:'+def.right+'px;';
+      if(def.rotate)pos+='transform:rotate('+def.rotate+'deg);';
+      el.style.cssText=pos;
+      appEl.appendChild(el);
+    });
+  });
+}
+
 // === Session ===
 var SID_KEY='telestrations_sid';
 function getSessionId(){var s=sessionStorage.getItem(SID_KEY);if(!s){s='s_'+Math.random().toString(36).substr(2,12)+'_'+Date.now();sessionStorage.setItem(SID_KEY,s);}return s;}
@@ -167,7 +348,7 @@ socket.on('connect',function(){
   }
 });
 
-function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});var e=document.getElementById('s-'+id);if(e)e.classList.add('active');document.getElementById('kami').style.display='none';document.getElementById('summary').style.display='none';}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});var e=document.getElementById('s-'+id);if(e)e.classList.add('active');document.getElementById('kami').style.display='none';document.getElementById('summary').style.display='none';processCharaImages();}
 function err(m){var e=document.getElementById('home-err');e.textContent=m;e.style.display='block';setTimeout(function(){e.style.display='none'},4000);}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000);}
@@ -183,7 +364,7 @@ socket.on('roomState',function(d){
     document.getElementById('l-count').textContent='('+d.players.length+'/8)';
     var c=document.getElementById('l-players');c.innerHTML='';
     var ic=['🟡','🔴','🔵','🟢','🟣','🟠','⚪','🟤'];
-    d.players.forEach(function(p,i){var t=document.createElement('div');t.className='tag';t.style.background='hsl('+(i*45)+',70%,92%)';t.style.border='2px solid hsl('+(i*45)+',60%,78%)';t.style.opacity=p.online?1:.5;t.innerHTML='<span>'+ic[i]+'</span><span>'+p.name+'</span>'+(p.name===d.hostName?'<span style="font-size:12px">👑</span>':'')+(p.online?'':'<span class="offline">⚫</span>');c.appendChild(t);});
+    d.players.forEach(function(p,i){var t=document.createElement('div');t.className='tag';t.style.background='hsl('+(i*45)+',50%,93%)';t.style.borderColor='hsl('+(i*45)+',40%,82%)';t.style.opacity=p.online?1:.5;t.innerHTML='<span>'+ic[i]+'</span><span>'+p.name+'</span>'+(p.name===d.hostName?'<span style="font-size:12px">👑</span>':'')+(p.online?'':'<span class="offline">⚫</span>');c.appendChild(t);});
     document.getElementById('l-host').style.display=isHost?'block':'none';
     document.getElementById('l-wait').style.display=isHost?'none':'block';
     document.getElementById('l-startbtn').disabled=d.players.length<3;
@@ -218,7 +399,6 @@ socket.on('startChainReveal',function(d){
   kTotal=d.totalSteps;kCur=0;
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   document.getElementById('kami').style.display='flex';document.getElementById('summary').style.display='none';
-  // Show topic immediately
   var e=d.firstEntry;
   document.getElementById('kami-slide').innerHTML='<div style="animation:kamiSlide .5s ease-out"><p class="kami-label">📌 '+esc(e.playerName)+' のお題</p><p class="kami-word" style="font-size:44px">'+esc(e.content)+'</p></div>';
   document.getElementById('kami-narr').textContent=(d.chainIdx+1)+'/'+d.totalChains+' — '+esc(e.playerName)+'さんのお題「'+e.content+'」！';
@@ -251,39 +431,72 @@ socket.on('chainComplete',function(d){
   else{nr.textContent='全員分の発表が終わりました！';ct.innerHTML=d.isHost?'<button class="btn btn-s" onclick="socket.emit(\'nextChain\')">📊 まとめを見る</button>':'';}
 });
 
+// === 結果まとめ（ページ送り式） ===
 socket.on('allRevealed',function(d){
-  document.getElementById('kami').style.display='none';var s=document.getElementById('summary');s.style.display='flex';
-  var inner=document.getElementById('sum-inner');
-  inner.innerHTML='<h2 style="color:#ffeaa7;font-size:28px;margin-bottom:20px;text-align:center">📖 結果まとめ</h2>';
-  d.chains.forEach(function(chain){
-    var sec=document.createElement('div');sec.style.marginBottom='24px';
-    sec.innerHTML='<p style="color:#ffeaa7;font-weight:900;font-size:16px;margin-bottom:10px">🎯 '+esc(chain.topicPlayerName)+' さんのお題</p>';
-    var orig=chain.entries[0].content,last=chain.entries[chain.entries.length-1];
-    if(last.type==='guess'){var match=last.content===orig||last.content.indexOf(orig)>=0||orig.indexOf(last.content)>=0;var b=document.createElement('div');b.className='res-b '+(match?'ok':'ng');b.textContent=match?'🎉 伝わった！「'+orig+'」':'😂 「'+orig+'」→「'+last.content+'」';sec.appendChild(b);}
-    chain.entries.forEach(function(e,i){
-      var card=document.createElement('div');card.className='sum-card';
-      var hc=e.type==='topic'?'t':e.type==='drawing'?'d':'g';
-      var ic=e.type==='topic'?'📌':e.type==='drawing'?'🎨':'💬';
-      var lb=e.type==='topic'?esc(e.playerName)+' のお題':e.type==='drawing'?esc(e.playerName)+' が描いた':esc(e.playerName)+' の回答';
-      var bd=e.type==='drawing'?'<img src="'+e.content+'" style="max-width:100%">':'<span class="sum-w">'+esc(e.content)+'</span>';
-      card.innerHTML='<div class="sum-h '+hc+'"><span>'+ic+'</span><span>'+lb+'</span></div><div class="sum-b">'+bd+'</div>';
-      sec.appendChild(card);
-      if(i<chain.entries.length-1){var a=document.createElement('div');a.style.cssText='text-align:center;font-size:20px;margin:4px 0;opacity:.4;color:#ffeaa7';a.textContent='⬇️';sec.appendChild(a);}
-    });
-    inner.appendChild(sec);
-  });
-  if(d.isHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
+  document.getElementById('kami').style.display='none';
+  document.getElementById('summary').style.display='flex';
+  shareLastChains=d.chains;
+  summaryIsHost=d.isHost;
+  isHost=d.isHost;
+  currentChainIdx=0;
+  renderSummaryPage(0);
+});
 
-  // ── 共有ボタン追加 ──
+function renderSummaryPage(idx){
+  currentChainIdx=idx;
+  var chains=shareLastChains;
+  if(!chains||!chains[idx])return;
+  var chain=chains[idx];
+  var inner=document.getElementById('sum-inner');
+  inner.innerHTML='';
+  // キャラクター
+  var charaDiv=document.createElement('div');charaDiv.style.cssText='text-align:center;margin-bottom:8px';
+  charaDiv.innerHTML='<img class="chara" data-chara="together" src="images/chara-together.png" style="width:90px">';
+  inner.appendChild(charaDiv);
+  // ヘッダー（ページカウンター付き）
+  var header=document.createElement('h2');
+  header.style.cssText='color:var(--primary);font-size:24px;margin-bottom:8px;text-align:center';
+  header.textContent='📖 '+chain.topicPlayerName+' のお題 ('+(idx+1)+'/'+chains.length+')';
+  inner.appendChild(header);
+  // 上部ナビゲーション
+  var nav=document.createElement('div');nav.className='sum-nav';
+  nav.innerHTML=(idx>0?'<button class="btn btn-g" onclick="renderSummaryPage('+(idx-1)+');window.scrollTo(0,0)" style="width:auto;padding:10px 20px;font-size:15px">◀ 前のお題</button>':'<div style="width:120px"></div>')
+    +'<span class="sum-page">'+(idx+1)+' / '+chains.length+'</span>'
+    +(idx<chains.length-1?'<button class="btn btn-s" onclick="renderSummaryPage('+(idx+1)+');window.scrollTo(0,0)" style="width:auto;padding:10px 20px;font-size:15px">次のお題 ▶</button>':'<div style="width:120px"></div>');
+  inner.appendChild(nav);
+  // 結果バッジ
+  var sec=document.createElement('div');sec.style.marginBottom='24px';
+  var orig=chain.entries[0].content,last=chain.entries[chain.entries.length-1];
+  if(last.type==='guess'){var match=last.content===orig||last.content.indexOf(orig)>=0||orig.indexOf(last.content)>=0;var b=document.createElement('div');b.className='res-b '+(match?'ok':'ng');b.textContent=match?'🎉 伝わった！「'+orig+'」':'😂 「'+orig+'」→「'+last.content+'」';sec.appendChild(b);}
+  // エントリー表示
+  chain.entries.forEach(function(e,i){
+    var card=document.createElement('div');card.className='sum-card';
+    var hc=e.type==='topic'?'t':e.type==='drawing'?'d':'g';
+    var ic=e.type==='topic'?'📌':e.type==='drawing'?'🎨':'💬';
+    var lb=e.type==='topic'?esc(e.playerName)+' のお題':e.type==='drawing'?esc(e.playerName)+' が描いた':esc(e.playerName)+' の回答';
+    var bd=e.type==='drawing'?'<img src="'+e.content+'" style="max-width:100%">':'<span class="sum-w">'+esc(e.content)+'</span>';
+    card.innerHTML='<div class="sum-h '+hc+'"><span>'+ic+'</span><span>'+lb+'</span></div><div class="sum-b">'+bd+'</div>';
+    sec.appendChild(card);
+    if(i<chain.entries.length-1){var a=document.createElement('div');a.style.cssText='text-align:center;font-size:20px;margin:4px 0;opacity:.3;color:var(--text-m)';a.textContent='⬇️';sec.appendChild(a);}
+  });
+  inner.appendChild(sec);
+  // ホストボタン
+  if(summaryIsHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
+  // 下部ナビゲーション
+  var nav2=document.createElement('div');nav2.className='sum-nav';
+  nav2.innerHTML=nav.innerHTML;
+  inner.appendChild(nav2);
+  // 共有ボタン
   var shareDiv=document.createElement('div');shareDiv.className='share-area';
-  shareLastChains=d.chains; // グローバルに保持
   if(canNativeShare()){
     shareDiv.innerHTML='<button class="btn-share" id="btnShare" onclick="handleShareAll()">📤 この結果を共有する</button>';
   } else {
-    shareDiv.innerHTML='<div class="share-row"><button class="btn-line" onclick="handleShareLine()">💬 LINEで共有</button><button class="btn-mail" onclick="handleShareMail()">✉ メールで共有</button></div><button class="btn-download" id="btnDownload" onclick="handleShareDownload()">💾 画像を保存</button>';
+    shareDiv.innerHTML='<div class="share-row"><button class="btn-gmail" onclick="handleShareGmail()">✉ Gmailで共有</button><button class="btn-download" id="btnDownload" onclick="handleShareDownload()">💾 画像を保存</button></div>';
   }
   inner.appendChild(shareDiv);
-});
+  window.scrollTo(0,0);
+  processCharaImages();
+}
 
 function buildDots(){var dots=document.getElementById('kami-dots');dots.innerHTML='';for(var i=0;i<kTotal;i++){var d=document.createElement('div');d.className='kami-dot'+(i===kCur?' on':i<kCur?' past':'');dots.appendChild(d);}}
 
@@ -336,12 +549,11 @@ document.getElementById('i-topic').addEventListener('keydown',function(e){if(e.k
 document.getElementById('i-guess').addEventListener('keydown',function(e){if(e.key==='Enter')doSubmitGuess()});
 
 // ── 共有機能 ──
-var shareLastChains=null;
+var shareLastChains=null,currentChainIdx=0,summaryIsHost=false;
 
 function canNativeShare(){return !!(navigator.share&&navigator.canShare);}
 
 function generateShareImage(chains,callback){
-  // 全チェインの絵を先に読み込む
   var totalToLoad=0,loadCount=0,images={};
   chains.forEach(function(chain,ci){
     chain.entries.forEach(function(e,ei){if(e.type==='drawing'&&e.content)totalToLoad++;});
@@ -363,54 +575,53 @@ function generateShareImage(chains,callback){
 
 function buildShareImage(chains,images,callback){
   var W=480,padding=24,entryGap=12,chainGap=32;
-  // 高さ計算
   var y=70;
   chains.forEach(function(chain){
-    y+=36; // チェインタイトル
+    y+=36;
     chain.entries.forEach(function(e){
-      y+=24; // ラベル
+      y+=24;
       if(e.type==='drawing'){y+=(W-padding*2)*0.75+8;}else{y+=48;}
       y+=16+entryGap;
     });
     y+=chainGap;
   });
-  y+=30; // フッター
+  y+=30;
   var H=y;
   var c=document.createElement('canvas');c.width=W*2;c.height=H*2;
   var ctx=c.getContext('2d');ctx.scale(2,2);
-  // 背景
-  ctx.fillStyle='#2a1810';ctx.fillRect(0,0,W,H);
+  // クリーム背景
+  ctx.fillStyle='#faf7f2';ctx.fillRect(0,0,W,H);
   // ヘッダー
-  ctx.fillStyle='#ffeaa7';ctx.font='bold 24px "Zen Maru Gothic","Noto Sans JP",sans-serif';ctx.textAlign='center';
-  ctx.fillText('テレストレーション 結果',W/2,40);
-  ctx.fillStyle='#b2bec3';ctx.font='13px "Zen Maru Gothic",sans-serif';ctx.fillText(chains.length+'人分のチェイン',W/2,58);
+  ctx.fillStyle='#8b6aae';ctx.font='bold 24px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+  ctx.fillText('The画伯 結果',W/2,40);
+  ctx.fillStyle='#8a807a';ctx.font='13px "Zen Maru Gothic",sans-serif';ctx.fillText(chains.length+'人分のチェイン',W/2,58);
   var curY=70;var contentW=W-padding*2;
   chains.forEach(function(chain,ci){
-    // チェインタイトル
-    ctx.fillStyle='#ffeaa7';ctx.font='bold 16px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#8b6aae';ctx.font='bold 16px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
     ctx.fillText('🎯 '+chain.topicPlayerName+' さんのお題',W/2,curY+20);curY+=36;
     chain.entries.forEach(function(e,ei){
       var label=e.type==='topic'?'📌 お題':e.type==='drawing'?'🎨 お絵描き':'💬 回答';
-      ctx.fillStyle='#b2bec3';ctx.font='11px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+      ctx.fillStyle='#8a807a';ctx.font='11px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
       ctx.fillText(label+' — '+e.playerName,W/2,curY+14);curY+=24;
       if(e.type==='drawing'){
         var imgH=contentW*0.75;
         ctx.fillStyle='#fffef5';shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.fill();
+        ctx.strokeStyle='#e8e2d9';ctx.lineWidth=1;shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.stroke();
         var key=ci+'_'+ei;
         if(images[key]){ctx.save();shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.clip();ctx.drawImage(images[key],padding,curY,contentW,imgH);ctx.restore();}
-        else{ctx.fillStyle='#b2bec3';ctx.font='14px sans-serif';ctx.fillText('(空白)',W/2,curY+imgH/2+5);}
+        else{ctx.fillStyle='#b5ada6';ctx.font='14px sans-serif';ctx.fillText('(空白)',W/2,curY+imgH/2+5);}
         curY+=imgH+8;
       }else{
-        ctx.fillStyle='rgba(255,255,255,0.1)';shareRoundRect(ctx,padding,curY,contentW,38,8);ctx.fill();
-        ctx.fillStyle='#fff';ctx.font='bold 18px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+        ctx.fillStyle='rgba(139,106,174,0.08)';shareRoundRect(ctx,padding,curY,contentW,38,8);ctx.fill();
+        ctx.fillStyle='#3d3535';ctx.font='bold 18px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
         ctx.fillText(e.content||'',W/2,curY+25);curY+=48;
       }
       curY+=16+entryGap;
     });
     curY+=chainGap;
   });
-  ctx.fillStyle='#636e72';ctx.font='11px sans-serif';ctx.textAlign='center';
-  ctx.fillText('テレストレーション — お絵描き伝言ゲーム',W/2,H-12);
+  ctx.fillStyle='#b5ada6';ctx.font='11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('The画伯 — お絵描き伝言ゲーム',W/2,H-12);
   c.toBlob(function(blob){callback(blob,c.toDataURL('image/png'));},'image/png');
 }
 
@@ -428,28 +639,16 @@ function handleShareAll(){
     if(btn){btn.disabled=false;btn.textContent='📤 この結果を共有する';}
     if(canNativeShare()){
       var file=new File([blob],'telestrations.png',{type:'image/png'});
-      if(navigator.canShare({files:[file]})){navigator.share({files:[file],title:'テレストレーション結果'}).catch(function(){});return;}
+      if(navigator.canShare({files:[file]})){navigator.share({files:[file],title:'The画伯結果'}).catch(function(){});return;}
     }
     shareDownloadImage(dataUrl);showShareToast('画像を保存しました');
   });
 }
 
-function handleShareLine(){
+function handleShareGmail(){
   if(!shareLastChains)return;
-  var text='🎨テレストレーション結果\n';
-  shareLastChains.forEach(function(chain){
-    var first=chain.entries[0]?chain.entries[0].content:'';
-    var last='';
-    for(var i=chain.entries.length-1;i>=0;i--){if(chain.entries[i].type!=='drawing'){last=chain.entries[i].content;break;}}
-    text+=chain.topicPlayerName+'：「'+first+'」→「'+last+'」\n';
-  });
-  window.open('https://social-plugins.line.me/lineit/share?text='+encodeURIComponent(text),'_blank');
-}
-
-function handleShareMail(){
-  if(!shareLastChains)return;
-  var subject='テレストレーション結果';
-  var body='テレストレーションの結果\n\n';
+  var subject='The画伯結果';
+  var body='The画伯の結果\n\n';
   shareLastChains.forEach(function(chain){
     body+='--- '+chain.topicPlayerName+' さんのお題 ---\n';
     chain.entries.forEach(function(e){
@@ -458,7 +657,7 @@ function handleShareMail(){
     });
     body+='\n';
   });
-  window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank');
 }
 
 function handleShareDownload(){
@@ -482,6 +681,10 @@ function showShareToast(msg){
   t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
+
+// ── 初期化：キャラクター処理 & スティッカー散りばめ ──
+processCharaImages();
+renderScatteredStickers();
 </script>
 </body>
 </html>

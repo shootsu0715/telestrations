@@ -18,6 +18,9 @@ let htmlContent = '';
  path.join(process.cwd(),'index.html'), path.resolve(__dirname,'index.html')].forEach(p => {
   if (!htmlContent) try { htmlContent = fs.readFileSync(p, 'utf8'); console.log('✅ HTML:', p); } catch(e){}
 });
+// 静的ファイルの配信（public/ 以下の画像等）
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', (req, res) => { htmlContent ? res.type('html').send(htmlContent) : res.status(500).send('index.html not found'); });
 
 const rooms = {};
@@ -269,7 +272,7 @@ function getIPs(){const ips=[],f=os.networkInterfaces();for(const n of Object.ke
 server.listen(PORT,'0.0.0.0',()=>{
   const ips=getIPs();
   console.log('\n🎨 ==========================================');
-  console.log('   テレストレーション v2.1 起動！');
+  console.log('   The画伯 v2.1 起動！');
   console.log('==========================================\n');
   console.log('   🏠 ローカル:  http://localhost:'+PORT);
   ips.forEach(ip=>console.log('   📱 ネットワーク: http://'+ip+':'+PORT));
