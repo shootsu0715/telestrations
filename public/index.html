@@ -51,6 +51,29 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px}
 .res-b{text-align:center;padding:16px;border-radius:14px;color:#fff;font-size:18px;font-weight:900;margin-bottom:14px}.res-b.ok{background:linear-gradient(135deg,#00b894,#00cec9)}.res-b.ng{background:linear-gradient(135deg,#fd79a8,#e84393)}
 .confetti{position:fixed;top:-20px;width:10px;height:10px;border-radius:2px;animation:confetti 2.5s ease-in forwards;pointer-events:none}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:2000;animation:slideUp .3s ease-out;pointer-events:none}
+/* ── 共有ボタンエリア ── */
+.share-area{display:flex;flex-direction:column;gap:8px;margin-top:16px;width:100%}
+.btn-share{width:100%;padding:14px;border-radius:var(--r);font-size:18px;font-weight:bold;color:#fff;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;gap:8px;
+  position:relative;overflow:hidden;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-share:hover{filter:brightness(1.1)}.btn-share:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btn-share::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%);pointer-events:none}
+.share-row{display:flex;gap:8px;width:100%}
+.btn-line{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
+  background:#06C755;display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-line:hover{filter:brightness(1.1)}
+.btn-mail{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
+  background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-mail:hover{filter:brightness(1.1)}
+.btn-download{width:100%;padding:11px;border-radius:var(--r);font-size:15px;font-weight:600;
+  color:#6c5ce7;background:rgba(108,92,231,.12);border:2px solid rgba(108,92,231,.3);
+  display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-download:hover{background:rgba(108,92,231,.22)}
+.share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:#00b894;color:#fff;padding:12px 24px;border-radius:14px;font-weight:bold;
+  font-size:15px;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);z-index:2001;
+  box-shadow:0 8px 32px rgba(0,184,148,.3);pointer-events:none;font-family:'Zen Maru Gothic',sans-serif}
+.share-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .flex-r{display:flex;gap:8px;width:100%}.flex-c{display:flex;flex-direction:column;gap:12px;width:100%}
 .tc{text-align:center}.mt{margin-top:12px}.mb{margin-bottom:12px}
 @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
@@ -121,6 +144,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px}
   <div class="kami-ctrl" id="kami-ctrl"></div>
 </div>
 <div class="kami" id="summary" style="overflow-y:auto"><div style="width:100%;max-width:720px;padding:20px" id="sum-inner"></div></div>
+<div class="share-toast" id="shareToast"></div>
 
 <script>
 // === Session ===
@@ -249,6 +273,16 @@ socket.on('allRevealed',function(d){
     inner.appendChild(sec);
   });
   if(d.isHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
+
+  // ── 共有ボタン追加 ──
+  var shareDiv=document.createElement('div');shareDiv.className='share-area';
+  shareLastChains=d.chains; // グローバルに保持
+  if(canNativeShare()){
+    shareDiv.innerHTML='<button class="btn-share" id="btnShare" onclick="handleShareAll()">📤 この結果を共有する</button>';
+  } else {
+    shareDiv.innerHTML='<div class="share-row"><button class="btn-line" onclick="handleShareLine()">💬 LINEで共有</button><button class="btn-mail" onclick="handleShareMail()">✉ メールで共有</button></div><button class="btn-download" id="btnDownload" onclick="handleShareDownload()">💾 画像を保存</button>';
+  }
+  inner.appendChild(shareDiv);
 });
 
 function buildDots(){var dots=document.getElementById('kami-dots');dots.innerHTML='';for(var i=0;i<kTotal;i++){var d=document.createElement('div');d.className='kami-dot'+(i===kCur?' on':i<kCur?' past':'');dots.appendChild(d);}}
@@ -300,6 +334,154 @@ document.getElementById('i-name').addEventListener('keydown',function(e){if(e.ke
 document.getElementById('i-code').addEventListener('keydown',function(e){if(e.key==='Enter')doJoin()});
 document.getElementById('i-topic').addEventListener('keydown',function(e){if(e.key==='Enter')doTopic()});
 document.getElementById('i-guess').addEventListener('keydown',function(e){if(e.key==='Enter')doSubmitGuess()});
+
+// ── 共有機能 ──
+var shareLastChains=null;
+
+function canNativeShare(){return !!(navigator.share&&navigator.canShare);}
+
+function generateShareImage(chains,callback){
+  // 全チェインの絵を先に読み込む
+  var totalToLoad=0,loadCount=0,images={};
+  chains.forEach(function(chain,ci){
+    chain.entries.forEach(function(e,ei){if(e.type==='drawing'&&e.content)totalToLoad++;});
+  });
+  if(totalToLoad===0){buildShareImage(chains,images,callback);return;}
+  chains.forEach(function(chain,ci){
+    chain.entries.forEach(function(e,ei){
+      if(e.type==='drawing'&&e.content){
+        (function(key,src){
+          var img=new Image();
+          img.onload=function(){images[key]=img;loadCount++;if(loadCount===totalToLoad)buildShareImage(chains,images,callback);};
+          img.onerror=function(){loadCount++;if(loadCount===totalToLoad)buildShareImage(chains,images,callback);};
+          img.src=src;
+        })(ci+'_'+ei,e.content);
+      }
+    });
+  });
+}
+
+function buildShareImage(chains,images,callback){
+  var W=480,padding=24,entryGap=12,chainGap=32;
+  // 高さ計算
+  var y=70;
+  chains.forEach(function(chain){
+    y+=36; // チェインタイトル
+    chain.entries.forEach(function(e){
+      y+=24; // ラベル
+      if(e.type==='drawing'){y+=(W-padding*2)*0.75+8;}else{y+=48;}
+      y+=16+entryGap;
+    });
+    y+=chainGap;
+  });
+  y+=30; // フッター
+  var H=y;
+  var c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  var ctx=c.getContext('2d');ctx.scale(2,2);
+  // 背景
+  ctx.fillStyle='#2a1810';ctx.fillRect(0,0,W,H);
+  // ヘッダー
+  ctx.fillStyle='#ffeaa7';ctx.font='bold 24px "Zen Maru Gothic","Noto Sans JP",sans-serif';ctx.textAlign='center';
+  ctx.fillText('テレストレーション 結果',W/2,40);
+  ctx.fillStyle='#b2bec3';ctx.font='13px "Zen Maru Gothic",sans-serif';ctx.fillText(chains.length+'人分のチェイン',W/2,58);
+  var curY=70;var contentW=W-padding*2;
+  chains.forEach(function(chain,ci){
+    // チェインタイトル
+    ctx.fillStyle='#ffeaa7';ctx.font='bold 16px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+    ctx.fillText('🎯 '+chain.topicPlayerName+' さんのお題',W/2,curY+20);curY+=36;
+    chain.entries.forEach(function(e,ei){
+      var label=e.type==='topic'?'📌 お題':e.type==='drawing'?'🎨 お絵描き':'💬 回答';
+      ctx.fillStyle='#b2bec3';ctx.font='11px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+      ctx.fillText(label+' — '+e.playerName,W/2,curY+14);curY+=24;
+      if(e.type==='drawing'){
+        var imgH=contentW*0.75;
+        ctx.fillStyle='#fffef5';shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.fill();
+        var key=ci+'_'+ei;
+        if(images[key]){ctx.save();shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.clip();ctx.drawImage(images[key],padding,curY,contentW,imgH);ctx.restore();}
+        else{ctx.fillStyle='#b2bec3';ctx.font='14px sans-serif';ctx.fillText('(空白)',W/2,curY+imgH/2+5);}
+        curY+=imgH+8;
+      }else{
+        ctx.fillStyle='rgba(255,255,255,0.1)';shareRoundRect(ctx,padding,curY,contentW,38,8);ctx.fill();
+        ctx.fillStyle='#fff';ctx.font='bold 18px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
+        ctx.fillText(e.content||'',W/2,curY+25);curY+=48;
+      }
+      curY+=16+entryGap;
+    });
+    curY+=chainGap;
+  });
+  ctx.fillStyle='#636e72';ctx.font='11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('テレストレーション — お絵描き伝言ゲーム',W/2,H-12);
+  c.toBlob(function(blob){callback(blob,c.toDataURL('image/png'));},'image/png');
+}
+
+function shareRoundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function handleShareAll(){
+  if(!shareLastChains)return;
+  var btn=document.getElementById('btnShare');
+  if(btn){btn.disabled=true;btn.textContent='⏳ 画像を生成中...';}
+  generateShareImage(shareLastChains,function(blob,dataUrl){
+    if(btn){btn.disabled=false;btn.textContent='📤 この結果を共有する';}
+    if(canNativeShare()){
+      var file=new File([blob],'telestrations.png',{type:'image/png'});
+      if(navigator.canShare({files:[file]})){navigator.share({files:[file],title:'テレストレーション結果'}).catch(function(){});return;}
+    }
+    shareDownloadImage(dataUrl);showShareToast('画像を保存しました');
+  });
+}
+
+function handleShareLine(){
+  if(!shareLastChains)return;
+  var text='🎨テレストレーション結果\n';
+  shareLastChains.forEach(function(chain){
+    var first=chain.entries[0]?chain.entries[0].content:'';
+    var last='';
+    for(var i=chain.entries.length-1;i>=0;i--){if(chain.entries[i].type!=='drawing'){last=chain.entries[i].content;break;}}
+    text+=chain.topicPlayerName+'：「'+first+'」→「'+last+'」\n';
+  });
+  window.open('https://social-plugins.line.me/lineit/share?text='+encodeURIComponent(text),'_blank');
+}
+
+function handleShareMail(){
+  if(!shareLastChains)return;
+  var subject='テレストレーション結果';
+  var body='テレストレーションの結果\n\n';
+  shareLastChains.forEach(function(chain){
+    body+='--- '+chain.topicPlayerName+' さんのお題 ---\n';
+    chain.entries.forEach(function(e){
+      if(e.type==='drawing'){body+='🎨 '+e.playerName+' が描いた\n';}
+      else{var label=e.type==='topic'?'📌 お題':'💬 回答';body+=label+'：'+e.content+' ('+e.playerName+')\n';}
+    });
+    body+='\n';
+  });
+  window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+
+function handleShareDownload(){
+  if(!shareLastChains)return;
+  var btn=document.getElementById('btnDownload');
+  var origText=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='⏳ 画像を生成中...';}
+  generateShareImage(shareLastChains,function(blob,dataUrl){
+    if(btn){btn.disabled=false;btn.textContent=origText;}
+    shareDownloadImage(dataUrl);showShareToast('✓ 画像を保存しました');
+  });
+}
+
+function shareDownloadImage(dataUrl){
+  var a=document.createElement('a');a.href=dataUrl;a.download='telestrations.png';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function showShareToast(msg){
+  var t=document.getElementById('shareToast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
 </script>
 </body>
 </html>
