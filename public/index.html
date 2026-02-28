@@ -47,7 +47,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;border:1.5px solid var(--border)}
 .tag .offline{opacity:.4;font-size:11px;margin-left:4px}
 .notice{border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.7;background:var(--accent-light);color:var(--text-l);border:1.5px solid rgba(245,166,35,0.15)}
-.room-code{font-size:48px;font-weight:900;letter-spacing:12px;text-align:center;font-family:'Courier New',monospace;color:var(--accent);padding:16px;background:var(--accent-light);border:2px dashed rgba(245,166,35,0.3);border-radius:16px}
+.room-code{font-size:48px;font-weight:900;letter-spacing:12px;text-align:center;font-family:'Courier New',monospace;color:var(--accent);padding:16px;background:var(--accent-light);border:1.5px solid rgba(245,166,35,0.15);border-radius:16px}
 
 /* ── キャンバス & ツールバー ── */
 .canvas-wrap{border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1.5px solid var(--border);background:#fffef5;width:100%}
@@ -152,7 +152,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
         <h1>The画伯</h1>
         <p class="sub mt">お絵描き伝言ゲーム</p>
       </div>
-      <div class="notice" style="text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px;color:var(--text)">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
+      <div style="border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.7;background:var(--soft);color:var(--text-l);border:1.5px solid var(--border);text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px;color:var(--text)">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
       <div class="flex-c" style="gap:12px">
         <input class="inp" id="i-name" placeholder="あなたの名前" maxlength="10">
         <button class="btn btn-p" onclick="doCreate()">🏠 ルームを作る</button>
@@ -198,7 +198,6 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
     <div class="tc">
       <p style="font-size:13px;color:var(--text-l)" id="d-info"></p>
       <div style="display:inline-flex;align-items:center;gap:10px;background:var(--accent-light);border:1.5px solid rgba(245,166,35,0.2);border-radius:14px;padding:8px 16px;margin:6px 0">
-        <img class="chara" data-chara="peek" src="images/chara-peek.png" style="width:50px;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.1))">
         <span id="d-prompt" style="font-size:20px;font-weight:900;font-family:'Hachi Maru Pop',cursive;color:var(--accent)"></span>
       </div>
     </div>
