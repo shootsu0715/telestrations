@@ -11,12 +11,12 @@
 /* ── リセット & カラーシステム ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#faf7f2;--card:#faf7f2;--border:#e8e2d9;--soft:#f5f0e8;
+  --bg:#fff0e1;--card:rgba(255,255,255,0.85);--border:#e8e2d9;--soft:#fff8f0;
   --primary:#8b6aae;--primary-light:#ece4f5;
   --accent:#f5a623;--accent-light:#fff4e0;
   --danger:#e8636a;--success:#5cb87a;
   --text:#3d3535;--text-l:#8a807a;--text-m:#b5ada6;
-  --r:16px;--sh:0 2px 12px rgba(0,0,0,0.04)
+  --r:16px;--sh:0 2px 16px rgba(0,0,0,0.05)
 }
 body{font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro','BIZ UDGothic','Rounded Mplus 1c',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:16px;overflow-x:hidden}
 .app{width:100%;max-width:640px;margin:0 auto;position:relative;overflow-x:hidden}
@@ -24,7 +24,7 @@ body{font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro','BIZ UDGothic','Ro
 .screen{display:none;animation:slideUp .4s ease-out}.screen.active{display:flex;flex-direction:column;align-items:center}
 
 /* ── カード & 基本要素 ── */
-.card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:28px;width:100%;box-shadow:var(--sh)}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:28px;width:100%;box-shadow:var(--sh);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 h1{font-size:36px;font-weight:900;color:var(--primary);text-align:center;letter-spacing:2px}
 h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var(--text)}
 .sub{font-family:'Hachi Maru Pop',cursive;color:var(--text-m);font-size:14px;text-align:center}
@@ -128,6 +128,14 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 @keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(500px) rotate(720deg);opacity:0}}
 @keyframes kamiSlide{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+@keyframes heroFloat{0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+@keyframes wander{0%{transform:translateX(-40px) scaleX(1)}45%{transform:translateX(40px) scaleX(1)}50%{transform:translateX(40px) scaleX(-1)}95%{transform:translateX(-40px) scaleX(-1)}100%{transform:translateX(-40px) scaleX(1)}}
+@keyframes sf1{0%{transform:translateY(0) rotate(-12deg)}100%{transform:translateY(-8px) rotate(-9deg)}}
+@keyframes sf2{0%{transform:translateY(0) rotate(10deg)}100%{transform:translateY(6px) rotate(7deg)}}
+@keyframes sf3{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-6px) rotate(-2deg)}}
+@keyframes sf4{0%{transform:translateY(0) rotate(15deg)}100%{transform:translateY(5px) rotate(12deg)}}
+@keyframes sf5{0%{transform:translateY(0) rotate(-8deg) scale(1)}100%{transform:translateY(-5px) rotate(-5deg) scale(1.03)}}
+@keyframes sf6{0%{transform:translateY(0) rotate(6deg)}100%{transform:translateY(7px) rotate(3deg)}}
 
 /* ── レスポンシブ ── */
 @media(max-width:520px){.card{padding:20px}h1{font-size:28px}.room-code{font-size:36px;letter-spacing:8px}#drawCanvas{height:300px}}
@@ -140,11 +148,11 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
     <div style="height:24px"></div>
     <div class="card flex-c tc" style="gap:20px">
       <div>
-        <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:130px;margin-bottom:8px">
+        <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:160px;margin-bottom:4px;animation:heroFloat 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px rgba(60,80,180,0.15))">
         <h1>The画伯</h1>
         <p class="sub mt">お絵描き伝言ゲーム</p>
       </div>
-      <div class="notice" style="text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
+      <div class="notice" style="text-align:left"><p style="font-weight:700;font-size:16px;margin-bottom:8px;color:var(--text)">📖 遊び方</p><p>① 全員がお題を出す 📝</p><p>② 他の人のお題に絵を描く 🖌️</p><p>③ 他の人の絵を見て答えを当てる 🤔</p><p>④ 全員回ったら結果発表！😂</p></div>
       <div class="flex-c" style="gap:12px">
         <input class="inp" id="i-name" placeholder="あなたの名前" maxlength="10">
         <button class="btn btn-p" onclick="doCreate()">🏠 ルームを作る</button>
@@ -158,8 +166,8 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
   <div class="screen" id="s-lobby"><div class="card flex-c" style="gap:16px">
     <h2>🎮 ロビー</h2>
     <div class="tc">
-      <img class="chara" data-chara="together" src="images/chara-together.png" style="width:110px;margin-bottom:8px">
-      <p class="sub mb">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p>
+      <div style="display:inline-block;animation:wander 4s ease-in-out infinite"><img class="chara" data-chara="together" src="images/chara-together.png" style="width:120px;filter:drop-shadow(0 3px 10px rgba(40,40,40,0.1))"></div>
+      <p class="sub mb" style="margin-top:8px">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p>
     </div>
     <div><p style="font-weight:700;font-size:15px;margin-bottom:8px">👥 プレイヤー <span id="l-count"></span></p><div class="tags" id="l-players"></div></div>
     <div id="l-host" style="display:none"><button class="btn btn-p" onclick="doStart()" id="l-startbtn">🚀 ゲーム開始！</button><p id="l-msg" class="sub mt"></p></div>
@@ -167,10 +175,12 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
   </div></div>
 
   <!-- ── お題入力 ── -->
-  <div class="screen" id="s-topic"><div class="card flex-c tc" style="gap:20px">
-    <div>
-      <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:80px;margin-bottom:4px">
-      <h2>お題を入力！</h2><p class="sub">みんなに伝える言葉を決めよう</p>
+  <div class="screen" id="s-topic"><div class="card flex-c" style="gap:20px">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <img class="chara" data-chara="cheer" src="images/chara-cheer.png" style="width:140px;flex-shrink:0;filter:drop-shadow(0 3px 10px rgba(40,40,40,0.08));animation:wiggle 2.5s ease-in-out infinite">
+      <div style="padding-top:16px">
+        <h2 style="margin-bottom:0">お題を入力！</h2><p class="sub" style="margin-top:6px">みんなに伝える<br>言葉を決めよう</p>
+      </div>
     </div>
     <input class="inp" id="i-topic" placeholder="例：宇宙飛行士、たこ焼き..." maxlength="20" style="text-align:center;font-size:22px">
     <button class="btn btn-p" onclick="doTopic()">🎯 決定！</button>
@@ -178,7 +188,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 
   <!-- ── お題待機 ── -->
   <div class="screen" id="s-topic-wait"><div class="card flex-c tc" style="gap:16px">
-    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:80px;animation:float 2.5s ease-in-out infinite">
+    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:110px;animation:float 2.5s ease-in-out infinite;filter:drop-shadow(0 3px 10px rgba(40,40,40,0.08))">
     <h2>お題を提出しました！</h2><p class="sub">全員が提出するのを待っています...</p>
     <div style="padding:16px"><div class="prog"><div class="prog-fill" id="topic-prog"></div></div><p class="sub mt" id="topic-prog-t"></p></div>
   </div></div>
@@ -188,7 +198,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
     <div class="tc">
       <p style="font-size:13px;color:var(--text-l)" id="d-info"></p>
       <div style="display:inline-flex;align-items:center;gap:10px;background:var(--accent-light);border:1.5px solid rgba(245,166,35,0.2);border-radius:14px;padding:8px 16px;margin:6px 0">
-        <img class="chara" data-chara="peek" src="images/chara-peek.png" style="width:50px">
+        <img class="chara" data-chara="peek" src="images/chara-peek.png" style="width:50px;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.1))">
         <span id="d-prompt" style="font-size:20px;font-weight:900;font-family:'Hachi Maru Pop',cursive;color:var(--accent)"></span>
       </div>
     </div>
@@ -200,7 +210,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
   <!-- ── 回答 ── -->
   <div class="screen" id="s-guess"><div class="card flex-c" style="gap:14px">
     <div style="display:flex;align-items:center;justify-content:center;gap:10px">
-      <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:60px">
+      <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:60px;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.1))">
       <div class="tc"><p style="font-size:13px;color:var(--text-l)" id="g-info"></p><p style="font-weight:700;font-size:18px;margin-top:4px">この絵は何？🤔</p></div>
     </div>
     <div style="border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1.5px solid var(--border)"><img id="g-image" style="width:100%;display:block" alt="絵"></div>
@@ -209,14 +219,14 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 
   <!-- ── 待機中 ── -->
   <div class="screen" id="s-waiting"><div class="card flex-c tc" style="gap:16px">
-    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:100px;animation:float 2.5s ease-in-out infinite">
+    <img class="chara" data-chara="sad" src="images/chara-sad.png" style="width:100px;animation:float 2.5s ease-in-out infinite;filter:drop-shadow(0 2px 8px rgba(139,106,174,0.12))">
     <h2>提出完了！</h2><p class="sub">他のプレイヤーを待っています...</p>
     <div style="padding:16px"><div class="prog"><div class="prog-fill" id="round-prog"></div></div><p class="sub mt" id="round-prog-t"></p></div>
   </div></div>
 
   <!-- ── 全員完了 ── -->
   <div class="screen" id="s-complete"><div class="card flex-c tc" style="gap:20px">
-    <img class="chara" data-chara="together" src="images/chara-together.png" style="width:110px;animation:wiggle 1.5s ease-in-out infinite">
+    <img class="chara" data-chara="together" src="images/chara-together.png" style="width:110px;animation:wiggle 1.5s ease-in-out infinite;filter:drop-shadow(0 2px 8px rgba(139,106,174,0.12))">
     <h2>全員完了！</h2><p class="sub">いよいよ結果発表です！</p>
     <div id="c-host" style="display:none"><button class="btn btn-p" onclick="socket.emit('startReveal')">🎭 結果発表スタート！</button></div>
     <div id="c-wait" style="display:none"><div class="notice tc">ホストが結果発表を始めます...</div></div>
@@ -225,10 +235,15 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 
 <!-- ── 紙芝居オーバーレイ ── -->
 <div class="kami" id="kami">
-  <div class="kami-frame"><div class="kami-stage" id="kami-stage"><div class="kami-slide" id="kami-slide"></div></div></div>
-  <div class="kami-narr" id="kami-narr"></div>
-  <div class="kami-dots" id="kami-dots"></div>
-  <div class="kami-ctrl" id="kami-ctrl"></div>
+  <div style="width:100%;max-width:720px;display:flex;flex-direction:column;align-items:center;gap:0">
+    <div id="kami-chara-top" style="display:flex;justify-content:flex-end;width:100%;padding:0 8px;margin-bottom:-6px;position:relative;z-index:2"></div>
+    <div class="kami-frame"><div class="kami-stage" id="kami-stage"><div class="kami-slide" id="kami-slide"></div></div></div>
+    <div id="kami-chara-bottom" style="display:flex;justify-content:flex-start;width:100%;padding:0 8px;margin-top:-6px;position:relative;z-index:2"></div>
+    <div class="kami-narr" id="kami-narr"></div>
+    <div class="kami-dots" id="kami-dots"></div>
+    <div id="kami-chara-mid" style="display:flex;justify-content:flex-end;width:100%;padding:0 8px;margin:-6px 0;position:relative;z-index:2"></div>
+    <div class="kami-ctrl" id="kami-ctrl"></div>
+  </div>
 </div>
 
 <!-- ── 結果まとめオーバーレイ ── -->
@@ -315,13 +330,16 @@ function renderScatteredStickers(){
     {sheet:'images/sticker-sheet1.jpg',col:3,row:0,size:52,opacity:0.13,top:420,right:-2,rotate:12},
     {sheet:'images/sticker-sheet2.jpg',col:2,row:2,size:58,opacity:0.14,top:250,left:-4,rotate:-8}
   ];
-  defs.forEach(function(def){
+  var sfAnims=['sf1','sf2','sf3','sf4','sf5','sf6','sf1','sf2'];
+  var sfDurs=[5,6,7,5.5,5,6.5,7,5.5];
+  defs.forEach(function(def,idx){
     cropAndCleanSticker(def.sheet,def.col,def.row,function(dataUrl){
       var el=document.createElement('img');el.className='bg-sticker';el.src=dataUrl;
       var pos='position:absolute;pointer-events:none;z-index:0;width:'+def.size+'px;height:'+def.size+'px;object-fit:contain;opacity:'+def.opacity+';top:'+def.top+'px;';
       if(def.left!=null)pos+='left:'+def.left+'px;';
       if(def.right!=null)pos+='right:'+def.right+'px;';
-      if(def.rotate)pos+='transform:rotate('+def.rotate+'deg);';
+      pos+='animation:'+sfAnims[idx%sfAnims.length]+' '+sfDurs[idx%sfDurs.length]+'s ease-in-out '+(idx*0.5)+'s infinite alternate;';
+      pos+='filter:drop-shadow(0 2px 6px rgba(139,106,174,0.1));';
       el.style.cssText=pos;
       appEl.appendChild(el);
     });
@@ -395,10 +413,30 @@ socket.on('allChainsComplete',function(d){show('complete');isHost=d.isHost;docum
 // === Kamishibai ===
 var kTotal=0,kCur=0;
 
+// キャラクター装飾をランダムに配置
+function renderKamiCharas(){
+  var charas=['images/chara-cheer.png','images/chara-sad.png','images/chara-peek.png','images/chara-together.png'];
+  var anims=['sf1','sf2','sf3','sf4'];
+  var durs=[5,6,7,5.5];
+  var rotates=[10,-8,12,-6];
+  var areas=[
+    {id:'kami-chara-top',justify:'flex-end',size:80},
+    {id:'kami-chara-bottom',justify:'flex-start',size:70},
+    {id:'kami-chara-mid',justify:'flex-end',size:72}
+  ];
+  areas.forEach(function(a,i){
+    var el=document.getElementById(a.id);if(!el)return;
+    el.style.justifyContent=a.justify;
+    el.innerHTML='<img class="chara" data-chara="kami'+i+'" src="'+charas[i%charas.length]+'" style="width:'+a.size+'px;height:'+a.size+'px;object-fit:contain;opacity:0.9;transform:rotate('+rotates[i]+'deg);pointer-events:none;animation:'+anims[i]+' '+durs[i]+'s ease-in-out infinite alternate;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.12))">';
+  });
+  processCharaImages();
+}
+
 socket.on('startChainReveal',function(d){
   kTotal=d.totalSteps;kCur=0;
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   document.getElementById('kami').style.display='flex';document.getElementById('summary').style.display='none';
+  renderKamiCharas();
   var e=d.firstEntry;
   document.getElementById('kami-slide').innerHTML='<div style="animation:kamiSlide .5s ease-out"><p class="kami-label">📌 '+esc(e.playerName)+' のお題</p><p class="kami-word" style="font-size:44px">'+esc(e.content)+'</p></div>';
   document.getElementById('kami-narr').textContent=(d.chainIdx+1)+'/'+d.totalChains+' — '+esc(e.playerName)+'さんのお題「'+e.content+'」！';
@@ -451,7 +489,7 @@ function renderSummaryPage(idx){
   inner.innerHTML='';
   // キャラクター
   var charaDiv=document.createElement('div');charaDiv.style.cssText='text-align:center;margin-bottom:8px';
-  charaDiv.innerHTML='<img class="chara" data-chara="together" src="images/chara-together.png" style="width:90px">';
+  charaDiv.innerHTML='<img class="chara" data-chara="together" src="images/chara-together.png" style="width:90px;animation:wiggle 1.5s ease-in-out infinite">';
   inner.appendChild(charaDiv);
   // ヘッダー（ページカウンター付き）
   var header=document.createElement('h2');
@@ -477,8 +515,14 @@ function renderSummaryPage(idx){
     var bd=e.type==='drawing'?'<img src="'+e.content+'" style="max-width:100%">':'<span class="sum-w">'+esc(e.content)+'</span>';
     card.innerHTML='<div class="sum-h '+hc+'"><span>'+ic+'</span><span>'+lb+'</span></div><div class="sum-b">'+bd+'</div>';
     sec.appendChild(card);
+    // エントリーカード間にキャラクター装飾を挿入
+    if(i===1){var cs1=document.createElement('div');cs1.style.cssText='display:flex;justify-content:flex-start;padding:0 0 0 8px;margin:-6px 0;position:relative;z-index:2';cs1.innerHTML='<img class="chara" data-chara="sumchara1" src="images/chara-peek.png" style="width:68px;height:68px;object-fit:contain;opacity:0.9;transform:rotate(-8deg);pointer-events:none;animation:sf2 6s ease-in-out 1s infinite alternate;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.12))">';sec.appendChild(cs1);}
+    if(i===3){var cs2=document.createElement('div');cs2.style.cssText='display:flex;justify-content:flex-end;padding:0 8px 0 0;margin:-6px 0;position:relative;z-index:2';cs2.innerHTML='<img class="chara" data-chara="sumchara2" src="images/chara-sad.png" style="width:70px;height:70px;object-fit:contain;opacity:0.9;transform:rotate(12deg);pointer-events:none;animation:sf3 7s ease-in-out 0.5s infinite alternate;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.12))">';sec.appendChild(cs2);}
     if(i<chain.entries.length-1){var a=document.createElement('div');a.style.cssText='text-align:center;font-size:20px;margin:4px 0;opacity:.3;color:var(--text-m)';a.textContent='⬇️';sec.appendChild(a);}
   });
+  // まとめ上部に右寄せキャラ追加
+  var charaR=document.createElement('div');charaR.style.cssText='display:flex;justify-content:flex-end;padding:0 8px 0 0;margin:-6px 0;position:relative;z-index:2';charaR.innerHTML='<img class="chara" data-chara="sumchara0" src="images/chara-cheer.png" style="width:80px;height:80px;object-fit:contain;opacity:0.9;transform:rotate(10deg);pointer-events:none;animation:sf1 5s ease-in-out infinite alternate;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.12))">';
+  sec.insertBefore(charaR,sec.firstChild);
   inner.appendChild(sec);
   // ホストボタン
   if(summaryIsHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
