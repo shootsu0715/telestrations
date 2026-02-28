@@ -31,7 +31,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 
 /* ── ボタン ── */
 .btn{padding:14px 32px;border-radius:var(--r);border:none;font-size:18px;font-weight:700;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif;transition:transform .12s;width:100%;display:inline-flex;justify-content:center;align-items:center;gap:8px}
-.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:active{transform:scale(.97)}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
 .btn-p{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(139,106,174,0.2)}
 .btn-s{background:linear-gradient(135deg,#a29bfe,#8b6aae);color:#fff}
 .btn-ok{background:var(--success);color:#fff}
@@ -164,13 +164,13 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 
   <!-- ── ロビー ── -->
   <div class="screen" id="s-lobby"><div class="card flex-c" style="gap:16px">
-    <h2>🎮 ロビー</h2>
+    <h2 style="margin:0">🎮 ロビー</h2>
     <div class="tc">
       <div style="display:inline-block;animation:wander 4s ease-in-out infinite"><img class="chara" data-chara="together" src="images/chara-together.png" style="width:120px;filter:drop-shadow(0 3px 10px rgba(40,40,40,0.1))"></div>
-      <p class="sub mb" style="margin-top:8px">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub mt">同じネットワークから参加</p>
+      <p class="sub" style="margin-top:8px;margin-bottom:8px">ルームコード</p><div class="room-code" id="l-code"></div><p class="sub" style="font-size:13px;margin-top:8px">同じネットワークから参加</p>
     </div>
-    <div><p style="font-weight:700;font-size:15px;margin-bottom:8px">👥 プレイヤー <span id="l-count"></span></p><div class="tags" id="l-players"></div></div>
-    <div id="l-host" style="display:none"><button class="btn btn-p" onclick="doStart()" id="l-startbtn">🚀 ゲーム開始！</button><p id="l-msg" class="sub mt"></p></div>
+    <div><p style="font-weight:700;font-size:15px;margin-bottom:8px">👥 プレイヤー <span id="l-count"></span></p><div class="tags" id="l-players" style="margin:0"></div></div>
+    <div id="l-host" style="display:none"><button class="btn btn-p" onclick="doStart()" id="l-startbtn">🚀 ゲーム開始！</button><p id="l-msg" class="sub" style="font-size:13px;margin-top:8px"></p></div>
     <div id="l-wait" style="display:none"><div class="notice tc">ホストがゲーム開始するのを待っています...</div></div>
   </div></div>
 
