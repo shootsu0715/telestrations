@@ -38,6 +38,38 @@ function onlineCount(room) { return room.players.filter(p=>p.online).length; }
 function isHostP(room, p) { return p.sessionId===room.hostSessionId; }
 function getChainForPlayer(N, pIdx, round) { return ((pIdx-1-round)%N+N)%N; }
 
+// 自動提出のデフォルト内容を返す
+function getAutoSubmitContent(room) {
+  const round = room.currentRound;
+  const isDraw = round % 2 === 0;
+  return isDraw ? '' : '(時間切れ)';
+}
+
+// プレイヤー状態を全員にブロードキャスト
+function broadcastPlayersStatus(room) {
+  const players = room.players.map(p => ({
+    sessionId: p.sessionId, name: p.name, online: p.online, kicked: p.kicked || false
+  }));
+  broadcast(room, 'playersStatus', { players });
+}
+
+// kickedまたは切断中プレイヤーの自動提出
+function autoSubmitForInactive(room) {
+  room.players.forEach((p, pIdx) => {
+    if ((p.kicked || !p.online) && !room.roundSubmissions[p.sessionId]) {
+      const N = room.players.length, round = room.currentRound;
+      const isDraw = round % 2 === 0;
+      const cIdx = getChainForPlayer(N, pIdx, round);
+      room.chains[cIdx].entries.push({
+        type: isDraw ? 'drawing' : 'guess',
+        content: isDraw ? '' : '(時間切れ)',
+        playerName: p.name
+      });
+      room.roundSubmissions[p.sessionId] = true;
+    }
+  });
+}
+
 function buildChains(room) {
   const N=room.players.length;
   room.chains=[];
@@ -52,12 +84,27 @@ function buildChains(room) {
 function startRound(room) {
   const N=room.players.length, round=room.currentRound, isDraw=round%2===0;
   room.roundSubmissions={};
+  // kicked/切断プレイヤーを即座に自動提出
+  autoSubmitForInactive(room);
+  const sub = Object.keys(room.roundSubmissions).length;
+  // 全員自動提出済みなら次ラウンドへ
+  if (sub >= N) {
+    room.currentRound++;
+    if (room.currentRound >= room.totalRounds) {
+      room.phase = 'reveal';
+      broadcast(room, 'allRevealed', p => ({ chains: room.chains, isHost: isHostP(room, p) }));
+    } else startRound(room);
+    return;
+  }
   room.players.forEach((p,pIdx) => {
-    if(!p.socketId) return;
+    if(!p.socketId || p.kicked) return;
+    if(room.roundSubmissions[p.sessionId]) return;
     const cIdx=getChainForPlayer(N,pIdx,round);
     const last=room.chains[cIdx].entries[room.chains[cIdx].entries.length-1];
     io.to(p.socketId).emit('yourTurn',{type:isDraw?'draw':'guess',prompt:last.content,promptType:last.type,roundNumber:round+1,totalRounds:room.totalRounds});
   });
+  // 進捗をブロードキャスト
+  broadcast(room,'roundProgress',{submitted:sub,total:N});
 }
 
 function handleSubmission(room, sessionId, type, content) {
@@ -74,8 +121,9 @@ function handleSubmission(room, sessionId, type, content) {
   if(sub>=N) {
     room.currentRound++;
     if(room.currentRound>=room.totalRounds) {
-      room.phase='reveal'; room.revealChainIdx=0; room.revealStepIdx=0;
-      broadcast(room,'allChainsComplete',p=>({totalChains:room.chains.length,isHost:isHostP(room,p)}));
+      room.phase='reveal';
+      // 紙芝居スキップ → 全チェインを直接送信（各自閲覧）
+      broadcast(room,'allRevealed',p=>({chains:room.chains,isHost:isHostP(room,p)}));
     } else startRound(room);
   }
 }
@@ -102,14 +150,15 @@ function restoreState(room, player, pIdx) {
     return;
   }
   if(room.phase==='reveal') {
-    io.to(sid).emit('allChainsComplete',{totalChains:room.chains.length,isHost:isHostP(room,player)});
+    // 全チェインデータを送信（各自閲覧）
+    io.to(sid).emit('allRevealed',{chains:room.chains,isHost:isHostP(room,player)});
   }
 }
 
 function broadcastLobby(room) {
   broadcast(room,'roomState',p=>({
     code:room.code,
-    players:room.players.map(pl=>({name:pl.name,online:pl.online})),
+    players:room.players.map(pl=>({name:pl.name,online:pl.online,kicked:pl.kicked||false,sessionId:pl.sessionId})),
     hostName:room.players[0]?.name,
     phase:room.phase,
     isHost:isHostP(room,p)
@@ -133,6 +182,7 @@ io.on('connection', socket => {
     console.log('♻️ 再接続:',s.name);
     cb({success:true,code:room.code,name:s.name,phase:room.phase});
     broadcast(room,'playerReconnected',{name:s.name,onlineCount:onlineCount(room)});
+    broadcastPlayersStatus(room);
     restoreState(room,room.players[pIdx],pIdx);
   });
 
@@ -148,7 +198,27 @@ io.on('connection', socket => {
     const {name,code,sessionId}=data;
     const room=rooms[code?.toUpperCase()];
     if(!room) return cb({success:false,error:'ルームが見つかりません'});
-    if(room.phase!=='lobby') return cb({success:false,error:'ゲーム中です'});
+    // ゲーム中の復帰チェック
+    if(room.phase!=='lobby') {
+      // 同じ名前で切断中（kickされていない）プレイヤーを探す
+      const dp = room.players.find(p => p.name === name && !p.online && !p.kicked);
+      if(!dp) return cb({success:false,error:'ゲーム中のため参加できません'});
+      // 復帰処理（reconnectSessionと同等）
+      const oldSid = dp.sessionId;
+      dp.socketId = socket.id;
+      dp.sessionId = sessionId;
+      dp.online = true;
+      delete sessions[oldSid];
+      sessions[sessionId] = {roomCode: room.code, name};
+      socket.join(room.code);
+      console.log('♻️ joinRoom復帰:', name);
+      const pIdx = room.players.indexOf(dp);
+      cb({success:true, code:room.code});
+      broadcast(room,'playerReconnected',{name,onlineCount:onlineCount(room)});
+      broadcastPlayersStatus(room);
+      restoreState(room, dp, pIdx);
+      return;
+    }
     if(room.players.length>=8) return cb({success:false,error:'満員です（最大8人）'});
     if(room.players.some(p=>p.name===name)) return cb({success:false,error:'その名前は使われています'});
     room.players.push({socketId:socket.id,sessionId,name,online:true});
@@ -236,8 +306,73 @@ io.on('connection', socket => {
 
   socket.on('backToLobby', () => {
     const room=findByHost(socket); if(!room) return;
+    // kickedプレイヤーを除外してからロビーに戻る
+    room.players = room.players.filter(p => !p.kicked);
     room.phase='lobby'; room.topics={}; room.chains=[];
+    room.currentRound=0; room.roundSubmissions={};
     broadcastLobby(room);
+  });
+
+  // ルームから退出してホームに戻る
+  socket.on('leaveRoom', (cb) => {
+    const room = findBySocket(socket.id);
+    if (!room) return cb?.({ ok: false });
+    const pIdx = room.players.findIndex(p => p.socketId === socket.id);
+    if (pIdx === -1) return cb?.({ ok: false });
+    const player = room.players[pIdx];
+    const wasHost = isHostP(room, player);
+    // プレイヤーをルームから除去
+    room.players.splice(pIdx, 1);
+    delete sessions[player.sessionId];
+    socket.leave(room.code);
+    console.log('🏠 退室:', player.name);
+    // 全員いなくなったらルーム削除
+    if (room.players.length === 0) {
+      delete rooms[room.code];
+      return cb?.({ ok: true });
+    }
+    // ホスト引き継ぎ
+    if (wasHost) room.hostSessionId = room.players[0].sessionId;
+    // 状態をブロードキャスト
+    if (room.phase === 'lobby') broadcastLobby(room);
+    else broadcastPlayersStatus(room);
+    cb?.({ ok: true });
+  });
+
+  // キックイベント
+  socket.on('kickPlayer', (targetSessionId, cb) => {
+    const room = findBySocket(socket.id);
+    if (!room) return cb({ ok: false, msg: 'ルームが見つかりません' });
+    const target = room.players.find(p => p.sessionId === targetSessionId);
+    if (!target) return cb({ ok: false, msg: 'プレイヤーが見つかりません' });
+    if (target.online) return cb({ ok: false, msg: '接続中のプレイヤーは退室させられません' });
+
+    console.log('👢 キック:', target.name);
+
+    if (room.phase === 'lobby') {
+      // ロビー中は配列から削除
+      room.players = room.players.filter(p => p.sessionId !== targetSessionId);
+      delete sessions[targetSessionId];
+      if (room.players.length === 0) { delete rooms[room.code]; return cb({ ok: true }); }
+      if (room.hostSessionId === targetSessionId) room.hostSessionId = room.players[0].sessionId;
+      broadcastLobby(room);
+    } else {
+      // ゲーム中はkickedフラグを立てる（配列からは削除しない）
+      target.kicked = true;
+      delete sessions[targetSessionId];
+      // 未提出なら自動提出
+      if (room.phase === 'topics' && room.topics[room.players.indexOf(target)] === undefined) {
+        const tIdx = room.players.indexOf(target);
+        room.topics[tIdx] = '(退室)';
+        const sub = room.players.filter((_, i) => room.topics[i] !== undefined).length;
+        broadcast(room, 'topicProgress', { submitted: sub, total: room.players.length });
+        if (sub >= room.players.length) { room.phase = 'playing'; buildChains(room); startRound(room); }
+      } else if (room.phase === 'playing' && !room.roundSubmissions[targetSessionId]) {
+        handleSubmission(room, targetSessionId, room.currentRound % 2 === 0 ? 'drawing' : 'guess', getAutoSubmitContent(room));
+      }
+      broadcastPlayersStatus(room);
+    }
+    cb({ ok: true });
   });
 
   socket.on('disconnect', () => {
@@ -246,22 +381,12 @@ io.on('connection', socket => {
       const room=rooms[code];
       const pIdx=room.players.findIndex(p=>p.socketId===socket.id);
       if(pIdx===-1) continue;
-      room.players[pIdx].socketId=null;
-      room.players[pIdx].online=false;
-      console.log('⚠️ オフライン:', room.players[pIdx].name);
-      broadcast(room,'playerWentOffline',{name:room.players[pIdx].name,onlineCount:onlineCount(room)});
-      if(room.phase==='lobby') {
-        const sessionId=room.players[pIdx].sessionId;
-        setTimeout(()=>{
-          const p=room.players.find(pl=>pl.sessionId===sessionId);
-          if(p&&!p.online){
-            room.players=room.players.filter(pl=>pl.sessionId!==sessionId);
-            delete sessions[sessionId];
-            if(room.players.length===0) delete rooms[code];
-            else { if(room.hostSessionId===sessionId) room.hostSessionId=room.players[0].sessionId; broadcastLobby(room); }
-          }
-        },60000);
-      }
+      const disconnectedPlayer = room.players[pIdx];
+      disconnectedPlayer.socketId=null;
+      disconnectedPlayer.online=false;
+      console.log('⚠️ オフライン:', disconnectedPlayer.name);
+      broadcast(room,'playerWentOffline',{name:disconnectedPlayer.name,onlineCount:onlineCount(room)});
+      broadcastPlayersStatus(room);
       break;
     }
   });
@@ -269,13 +394,38 @@ io.on('connection', socket => {
 
 const PORT=process.env.PORT||3001;
 function getIPs(){const ips=[],f=os.networkInterfaces();for(const n of Object.keys(f))for(const i of f[n])if(i.family==='IPv4'&&!i.internal)ips.push(i.address);return ips;}
-server.listen(PORT,'0.0.0.0',()=>{
+
+function startServer(protocol, listenServer) {
   const ips=getIPs();
-  console.log('\n🎨 ==========================================');
-  console.log('   The画伯 v2.1 起動！');
-  console.log('==========================================\n');
-  console.log('   🏠 ローカル:  http://localhost:'+PORT);
-  ips.forEach(ip=>console.log('   📱 ネットワーク: http://'+ip+':'+PORT));
-  console.log('\n   同じネットワークからアクセスできます');
-  console.log('==========================================\n');
-});
+  listenServer.listen(PORT,'0.0.0.0',()=>{
+    console.log('\n🎨 ==========================================');
+    console.log('   The画伯 v2.1 起動！');
+    console.log('==========================================\n');
+    console.log('   🏠 ローカル:  '+protocol+'://localhost:'+PORT);
+    ips.forEach(ip=>console.log('   📱 ネットワーク: '+protocol+'://'+ip+':'+PORT));
+    if(protocol==='https') console.log('\n   ⚠️  自己署名証明書のため、ブラウザで警告が出ます');
+    console.log('\n   同じネットワークからアクセスできます');
+    console.log('==========================================\n');
+  });
+}
+
+if (process.env.LOCAL_HTTPS === 'true') {
+  // ローカル開発用HTTPS（スマホでWeb Share APIをテストする用）
+  const https = require('https');
+  const certKey = path.join(__dirname, 'localhost-key.pem');
+  const certFile = path.join(__dirname, 'localhost-cert.pem');
+  if (!fs.existsSync(certKey) || !fs.existsSync(certFile)) {
+    console.error('❌ 証明書ファイルが見つかりません: localhost-key.pem / localhost-cert.pem');
+    console.error('   以下のコマンドで生成してください:');
+    console.error('   openssl req -x509 -newkey rsa:2048 -keyout localhost-key.pem -out localhost-cert.pem -days 365 -nodes -subj "/CN=localhost"');
+    process.exit(1);
+  }
+  const options = { key: fs.readFileSync(certKey), cert: fs.readFileSync(certFile) };
+  const httpsServer = https.createServer(options, app);
+  // Socket.IOをHTTPSサーバーにアタッチ
+  io.attach(httpsServer);
+  startServer('https', httpsServer);
+} else {
+  // 通常起動（本番 / Render）
+  startServer('http', server);
+}

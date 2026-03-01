@@ -18,8 +18,8 @@
   --text:#3d3535;--text-l:#8a807a;--text-m:#b5ada6;
   --r:16px;--sh:0 2px 16px rgba(0,0,0,0.05)
 }
-body{font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro','BIZ UDGothic','Rounded Mplus 1c',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:16px;overflow-x:hidden}
-.app{width:100%;max-width:640px;margin:0 auto;position:relative;overflow-x:hidden}
+body{font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro','BIZ UDGothic','Rounded Mplus 1c',sans-serif;min-height:100vh;background:var(--bg);color:var(--text);display:flex;justify-content:center;align-items:flex-start;padding:16px;padding-bottom:env(safe-area-inset-bottom,16px);overflow-x:hidden;overflow-y:auto}
+.app{width:100%;max-width:640px;margin:0 auto;position:relative;overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
 .app>*:not(.bg-sticker){position:relative;z-index:1}
 .screen{display:none;animation:slideUp .4s ease-out}.screen.active{display:flex;flex-direction:column;align-items:center}
 
@@ -101,6 +101,9 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 .btn-gmail{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
   background:linear-gradient(135deg,#ea4335,#d93025);display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
 .btn-gmail:hover{filter:brightness(1.1)}
+.btn-line{flex:1;padding:12px;border-radius:var(--r);font-size:16px;font-weight:bold;color:#fff;
+  background:#06c755;display:flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.btn-line:hover{filter:brightness(1.1)}
 .sum-nav{display:flex;gap:12px;justify-content:center;align-items:center;margin:16px 0}
 .sum-page{color:var(--primary);font-size:16px;font-weight:700}
 .btn-download{width:100%;padding:11px;border-radius:var(--r);font-size:15px;font-weight:600;
@@ -136,6 +139,15 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
 @keyframes sf4{0%{transform:translateY(0) rotate(15deg)}100%{transform:translateY(5px) rotate(12deg)}}
 @keyframes sf5{0%{transform:translateY(0) rotate(-8deg) scale(1)}100%{transform:translateY(-5px) rotate(-5deg) scale(1.03)}}
 @keyframes sf6{0%{transform:translateY(0) rotate(6deg)}100%{transform:translateY(7px) rotate(3deg)}}
+
+/* ── 切断通知バー ── */
+.disconnect-bar{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;margin-top:8px;width:100%}
+.disconnect-player{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.disconnect-info{display:flex;align-items:center;gap:6px;font-size:.85em;color:var(--danger)}
+.disconnect-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.kick-btn{padding:4px 10px;border-radius:8px;font-size:.75em;font-weight:600;background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);cursor:pointer;font-family:'Zen Maru Gothic',sans-serif}
+.kick-btn:hover{background:rgba(239,68,68,.25)}
 
 /* ── レスポンシブ ── */
 @media(max-width:520px){.card{padding:20px}h1{font-size:28px}.room-code{font-size:36px;letter-spacing:8px}#drawCanvas{height:300px}}
@@ -195,6 +207,11 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
       </div>
       <p id="home-err" style="color:var(--danger);font-size:14px;display:none"></p>
     </div>
+    <div id="rejoin-guide" class="card" style="display:none;background:rgba(139,106,174,.08);border-color:rgba(139,106,174,.25);text-align:center;padding:16px;margin-top:12px">
+      <p style="color:var(--primary);font-size:.9em;margin-bottom:10px;font-weight:700">接続が切れたゲームがあります</p>
+      <p style="color:var(--text-l);font-size:.8em;margin-bottom:12px" id="rejoin-info"></p>
+      <button class="btn btn-p" onclick="rejoinViaJoinRoom()" style="font-size:16px">🔄 ゲームに戻る</button>
+    </div>
   </div>
 
   <!-- ── ロビー ── -->
@@ -229,6 +246,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
     <div style="position:relative;z-index:1;padding-top:80px">
       <h2>お題を提出しました！</h2><p class="sub">全員が提出するのを待っています...</p>
       <div style="padding:16px"><div class="prog"><div class="prog-fill" id="topic-prog"></div></div><p class="sub mt" id="topic-prog-t"></p></div>
+      <div id="disconnect-bar-topic" class="disconnect-bar" style="display:none"></div>
     </div>
   </div></div>
 
@@ -263,6 +281,7 @@ h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:20px;color:var
     <img src="/images/sticker/sleep.png" alt="" style="width:100px;animation:float 2.5s ease-in-out infinite;filter:drop-shadow(0 2px 8px rgba(139,106,174,0.12))">
     <h2>提出完了！</h2><p class="sub">他のプレイヤーを待っています...</p>
     <div style="padding:16px"><div class="prog"><div class="prog-fill" id="round-prog"></div></div><p class="sub mt" id="round-prog-t"></p></div>
+    <div id="disconnect-bar-waiting" class="disconnect-bar" style="display:none"></div>
   </div></div>
 
   <!-- ── 全員完了 ── -->
@@ -394,27 +413,48 @@ var sessionId=getSessionId();
 
 var socket=io({reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:1000,reconnectionDelayMax:5000});
 var myName='',roomCode='',isHost=false;
+var roomPlayers=[]; // プレイヤー状態追跡用
 var canvas,ctx,drawing=false,lastPos=null,curColor='#1a1a2e',curSize=6,eraser=false,hist=[];
 var COLORS=['#1a1a2e','#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#e91e8f','#795548','#ffffff'];
 var SIZES=[3,6,12,20];
 
+// === セッション永続化（localStorage） ===
+var LS_ROOM='tele_roomCode',LS_NAME='tele_name';
+function saveSession(){if(roomCode)localStorage.setItem(LS_ROOM,roomCode);if(myName)localStorage.setItem(LS_NAME,myName);}
+function clearSavedSession(){localStorage.removeItem(LS_ROOM);localStorage.removeItem(LS_NAME);}
+function showRejoinGuide(code,name){
+  var guide=document.getElementById('rejoin-guide');if(!guide)return;
+  document.getElementById('rejoin-info').textContent='ルーム '+code+' / '+name;
+  document.getElementById('i-name').value=name;
+  document.getElementById('i-code').value=code;
+  guide.style.display='';
+}
+function hideRejoinGuide(){var g=document.getElementById('rejoin-guide');if(g)g.style.display='none';}
+function rejoinViaJoinRoom(){
+  var savedCode=localStorage.getItem(LS_ROOM),savedName=localStorage.getItem(LS_NAME);
+  if(!savedCode||!savedName||!socket||!socket.connected)return;
+  socket.emit('joinRoom',{name:savedName,code:savedCode,sessionId:sessionId},function(r){
+    if(r.success){roomCode=r.code;myName=savedName;saveSession();hideRejoinGuide();}
+    else{clearSavedSession();hideRejoinGuide();err(r.error);}
+  });
+}
+
 // === Reconnect on socket reconnect ===
 socket.on('connect',function(){
-  if(roomCode){
-    socket.emit('reconnectSession',sessionId,function(r){
-      if(r.success){myName=r.name;roomCode=r.code;toast('♻️ 再接続しました');}
-    });
-  }
+  socket.emit('reconnectSession',sessionId,function(r){
+    if(r.success){myName=r.name;roomCode=r.code;saveSession();toast('♻️ 再接続しました');}
+    else{var sc=localStorage.getItem(LS_ROOM),sn=localStorage.getItem(LS_NAME);if(sc&&sn)showRejoinGuide(sc,sn);}
+  });
 });
 
-function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});var e=document.getElementById('s-'+id);if(e)e.classList.add('active');document.getElementById('kami').style.display='none';document.getElementById('summary').style.display='none';var decorMap={'home':'home-decor','lobby':'lobby-decor','topic':'topic-decor','topic-wait':'topic-decor','draw':'draw-decor','guess':'guess-decor','waiting':'guess-decor','complete':'guess-decor'};['home-decor','lobby-decor','topic-decor','draw-decor','guess-decor'].forEach(function(d){document.getElementById(d).style.display='none';});var active=decorMap[id];if(active)document.getElementById(active).style.display='';processCharaImages();}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});var e=document.getElementById('s-'+id);if(e)e.classList.add('active');document.getElementById('kami').style.display='none';document.getElementById('summary').style.display='none';var decorMap={'home':'home-decor','lobby':'lobby-decor','topic':'topic-decor','topic-wait':'topic-decor','draw':'draw-decor','guess':'guess-decor','waiting':'guess-decor','complete':'guess-decor'};['home-decor','lobby-decor','topic-decor','draw-decor','guess-decor'].forEach(function(d){document.getElementById(d).style.display='none';});var active=decorMap[id];if(active)document.getElementById(active).style.display='';document.querySelector('.app').scrollTop=0;processCharaImages();}
 function err(m){var e=document.getElementById('home-err');e.textContent=m;e.style.display='block';setTimeout(function(){e.style.display='none'},4000);}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000);}
 
 // === Home ===
-function doCreate(){var n=document.getElementById('i-name').value.trim();if(!n)return err('名前を入力');myName=n;socket.emit('createRoom',{name:n,sessionId:sessionId},function(r){if(r.success)roomCode=r.code;else err(r.error)});}
-function doJoin(){var n=document.getElementById('i-name').value.trim(),c=document.getElementById('i-code').value.trim().toUpperCase();if(!n)return err('名前を入力');if(!c)return err('コードを入力');myName=n;socket.emit('joinRoom',{name:n,code:c,sessionId:sessionId},function(r){if(r.success)roomCode=r.code;else err(r.error)});}
+function doCreate(){var n=document.getElementById('i-name').value.trim();if(!n)return err('名前を入力');myName=n;socket.emit('createRoom',{name:n,sessionId:sessionId},function(r){if(r.success){roomCode=r.code;saveSession();hideRejoinGuide();}else err(r.error)});}
+function doJoin(){var n=document.getElementById('i-name').value.trim(),c=document.getElementById('i-code').value.trim().toUpperCase();if(!n)return err('名前を入力');if(!c)return err('コードを入力');myName=n;socket.emit('joinRoom',{name:n,code:c,sessionId:sessionId},function(r){if(r.success){roomCode=r.code;saveSession();hideRejoinGuide();}else err(r.error)});}
 
 // === Lobby ===
 socket.on('roomState',function(d){
@@ -448,7 +488,7 @@ function doSubmitGuess(){var v=document.getElementById('i-guess').value.trim();i
 socket.on('waitingForOthers',function(){show('waiting');});
 socket.on('roundProgress',function(d){document.getElementById('round-prog').style.width=Math.round(d.submitted/d.total*100)+'%';document.getElementById('round-prog-t').textContent=d.submitted+'/'+d.total+' 人が提出';});
 
-// === Complete ===
+// === Complete（旧: 紙芝居待機。今は使われないがイベント互換性のため残す） ===
 socket.on('allChainsComplete',function(d){show('complete');isHost=d.isHost;document.getElementById('c-host').style.display=d.isHost?'block':'none';document.getElementById('c-wait').style.display=d.isHost?'none':'block';});
 
 // === Kamishibai ===
@@ -509,14 +549,18 @@ socket.on('chainComplete',function(d){
   else{nr.textContent='全員分の発表が終わりました！';ct.innerHTML=d.isHost?'<button class="btn btn-s" onclick="socket.emit(\'nextChain\')">📊 まとめを見る</button>':'';}
 });
 
-// === 結果まとめ（ページ送り式） ===
+// === 結果まとめ（各自閲覧） ===
 socket.on('allRevealed',function(d){
+  // 紙芝居スキップ → 直接まとめ画面へ
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  ['home-decor','lobby-decor','topic-decor','draw-decor','guess-decor'].forEach(function(dec){document.getElementById(dec).style.display='none';});
   document.getElementById('kami').style.display='none';
   document.getElementById('summary').style.display='flex';
   shareLastChains=d.chains;
   summaryIsHost=d.isHost;
   isHost=d.isHost;
   currentChainIdx=0;
+  preGenerateAllChainImages();
   renderSummaryPage(0);
 });
 
@@ -567,21 +611,25 @@ function renderSummaryPage(idx){
   // ボタン上部にキャラ追加
   var charaBot=document.createElement('div');charaBot.style.cssText='display:flex;justify-content:flex-start;padding:0 0 0 8px;margin:-6px 0;position:relative;z-index:2';charaBot.innerHTML='<img src="/images/sticker/couple.png" alt="" style="width:72px;height:72px;object-fit:contain;opacity:0.9;transform:rotate(-6deg);pointer-events:none;animation:sf4 5.5s ease-in-out 1.5s infinite alternate;filter:drop-shadow(0 2px 6px rgba(139,106,174,0.12))">';
   inner.appendChild(charaBot);
-  // ホストボタン
-  if(summaryIsHost){var btns=document.createElement('div');btns.className='flex-r';btns.style.marginTop='20px';btns.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'newGame\')">🔄 もう1回！</button><button class="btn btn-g" onclick="socket.emit(\'backToLobby\')" style="width:auto;padding:14px 20px">🏠</button>';inner.appendChild(btns);}
+  // アクションボタン（全プレイヤー共通）
+  var actionDiv=document.createElement('div');actionDiv.className='flex-c';actionDiv.style.cssText='margin-top:20px;gap:8px';
+  if(summaryIsHost){
+    actionDiv.innerHTML='<button class="btn btn-p" onclick="socket.emit(\'backToLobby\')">🎮 次のゲームへ（ロビーに戻る）</button>';
+  }else{
+    actionDiv.innerHTML='<div style="text-align:center;color:var(--text-m);font-size:.85em;padding:8px">ホストが次のゲームを開始するのを待つか、退出できます</div>';
+  }
+  actionDiv.innerHTML+='<button class="btn btn-g" onclick="leaveRoom()">🏠 ホームに戻る</button>';
+  inner.appendChild(actionDiv);
   // 下部ナビゲーション
   var nav2=document.createElement('div');nav2.className='sum-nav';
   nav2.innerHTML=nav.innerHTML;
   inner.appendChild(nav2);
-  // 共有ボタン
+  // チェインごとの共有ボタン（共有1つ＋保存1つ）
   var shareDiv=document.createElement('div');shareDiv.className='share-area';
-  if(canNativeShare()){
-    shareDiv.innerHTML='<button class="btn-share" id="btnShare" onclick="handleShareAll()">📤 この結果を共有する</button>';
-  } else {
-    shareDiv.innerHTML='<div class="share-row"><button class="btn-gmail" onclick="handleShareGmail()">✉ Gmailで共有</button><button class="btn-download" id="btnDownload" onclick="handleShareDownload()">💾 画像を保存</button></div>';
-  }
+  shareDiv.innerHTML='<button class="btn-share" onclick="shareChain('+idx+')">📤 この結果を共有</button>'
+    +'<button class="btn-share" style="background:var(--success)" onclick="shareChainDownload('+idx+')">💾 画像を保存</button>';
   inner.appendChild(shareDiv);
-  window.scrollTo(0,0);
+  document.getElementById('summary').scrollTop=0;
   processCharaImages();
 }
 
@@ -629,6 +677,55 @@ socket.on('playerWentOffline',function(d){toast('⚠️ '+d.name+' が切断 ('+
 socket.on('playerReconnected',function(d){toast('✅ '+d.name+' が再接続');});
 socket.on('playerDisconnected',function(d){alert(d.message);});
 
+// プレイヤー状態更新
+socket.on('playersStatus',function(d){
+  roomPlayers=d.players;
+  updateDisconnectBar();
+});
+
+// 切断通知バーの更新（全バーを一括更新）
+function updateDisconnectBar(){
+  var barIds=['disconnect-bar-topic','disconnect-bar-waiting'];
+  var disconnected=[];
+  for(var i=0;i<roomPlayers.length;i++){
+    var p=roomPlayers[i];
+    if(!p.online&&!p.kicked&&p.sessionId!==sessionId) disconnected.push(p);
+  }
+  var html='';
+  if(disconnected.length>0){
+    for(var i=0;i<disconnected.length;i++){
+      var p=disconnected[i];
+      html+='<div class="disconnect-player"><div class="disconnect-info"><div class="disconnect-dot"></div><span>'+esc(p.name)+' が切断中...</span></div><button class="kick-btn" onclick="kickPlayer(\''+p.sessionId+'\')">退室させる</button></div>';
+    }
+  }
+  for(var b=0;b<barIds.length;b++){
+    var bar=document.getElementById(barIds[b]);
+    if(!bar)continue;
+    if(disconnected.length===0){bar.style.display='none';bar.innerHTML='';}
+    else{bar.style.display='';bar.innerHTML=html;}
+  }
+}
+
+function leaveRoom(){
+  if(!confirm('ルームから退出してホームに戻りますか？'))return;
+  socket.emit('leaveRoom',function(){
+    roomCode='';myName='';isHost=false;roomPlayers=[];
+    shareLastChains=null;chainImageCache={};
+    clearSavedSession();
+    show('home');
+    document.getElementById('i-name').value='';
+    document.getElementById('i-code').value='';
+  });
+}
+
+function kickPlayer(targetSid){
+  var target=null;
+  for(var i=0;i<roomPlayers.length;i++){if(roomPlayers[i].sessionId===targetSid){target=roomPlayers[i];break;}}
+  if(!target)return;
+  if(!confirm(target.name+' を退室させますか？\nこのプレイヤーはゲームに戻れなくなります。'))return;
+  socket.emit('kickPlayer',targetSid,function(res){if(!res.ok)alert(res.msg);});
+}
+
 function spawnConfetti(){for(var i=0;i<25;i++){var c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*100+'%';c.style.background='hsl('+Math.random()*360+',80%,60%)';c.style.animationDuration=(2+Math.random()*2)+'s';c.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(c);setTimeout(function(){c.remove()},5000);}}
 document.getElementById('i-name').addEventListener('keydown',function(e){if(e.key==='Enter'){var c=document.getElementById('i-code').value.trim();if(c)doJoin();else doCreate();}});
 document.getElementById('i-code').addEventListener('keydown',function(e){if(e.key==='Enter')doJoin()});
@@ -637,80 +734,10 @@ document.getElementById('i-guess').addEventListener('keydown',function(e){if(e.k
 
 // ── 共有機能 ──
 var shareLastChains=null,currentChainIdx=0,summaryIsHost=false;
+var chainImageCache={}; // 事前生成した画像Blobキャッシュ
 
-function canNativeShare(){return !!(navigator.share&&navigator.canShare);}
-
-function generateShareImage(chains,callback){
-  var totalToLoad=0,loadCount=0,images={};
-  chains.forEach(function(chain,ci){
-    chain.entries.forEach(function(e,ei){if(e.type==='drawing'&&e.content)totalToLoad++;});
-  });
-  if(totalToLoad===0){buildShareImage(chains,images,callback);return;}
-  chains.forEach(function(chain,ci){
-    chain.entries.forEach(function(e,ei){
-      if(e.type==='drawing'&&e.content){
-        (function(key,src){
-          var img=new Image();
-          img.onload=function(){images[key]=img;loadCount++;if(loadCount===totalToLoad)buildShareImage(chains,images,callback);};
-          img.onerror=function(){loadCount++;if(loadCount===totalToLoad)buildShareImage(chains,images,callback);};
-          img.src=src;
-        })(ci+'_'+ei,e.content);
-      }
-    });
-  });
-}
-
-function buildShareImage(chains,images,callback){
-  var W=480,padding=24,entryGap=12,chainGap=32;
-  var y=70;
-  chains.forEach(function(chain){
-    y+=36;
-    chain.entries.forEach(function(e){
-      y+=24;
-      if(e.type==='drawing'){y+=(W-padding*2)*0.75+8;}else{y+=48;}
-      y+=16+entryGap;
-    });
-    y+=chainGap;
-  });
-  y+=30;
-  var H=y;
-  var c=document.createElement('canvas');c.width=W*2;c.height=H*2;
-  var ctx=c.getContext('2d');ctx.scale(2,2);
-  // クリーム背景
-  ctx.fillStyle='#faf7f2';ctx.fillRect(0,0,W,H);
-  // ヘッダー
-  ctx.fillStyle='#8b6aae';ctx.font='bold 24px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
-  ctx.fillText('The画伯 結果',W/2,40);
-  ctx.fillStyle='#8a807a';ctx.font='13px "Zen Maru Gothic",sans-serif';ctx.fillText(chains.length+'人分のチェイン',W/2,58);
-  var curY=70;var contentW=W-padding*2;
-  chains.forEach(function(chain,ci){
-    ctx.fillStyle='#8b6aae';ctx.font='bold 16px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
-    ctx.fillText('🎯 '+chain.topicPlayerName+' さんのお題',W/2,curY+20);curY+=36;
-    chain.entries.forEach(function(e,ei){
-      var label=e.type==='topic'?'📌 お題':e.type==='drawing'?'🎨 お絵描き':'💬 回答';
-      ctx.fillStyle='#8a807a';ctx.font='11px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
-      ctx.fillText(label+' — '+e.playerName,W/2,curY+14);curY+=24;
-      if(e.type==='drawing'){
-        var imgH=contentW*0.75;
-        ctx.fillStyle='#fffef5';shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.fill();
-        ctx.strokeStyle='#e8e2d9';ctx.lineWidth=1;shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.stroke();
-        var key=ci+'_'+ei;
-        if(images[key]){ctx.save();shareRoundRect(ctx,padding,curY,contentW,imgH,8);ctx.clip();ctx.drawImage(images[key],padding,curY,contentW,imgH);ctx.restore();}
-        else{ctx.fillStyle='#b5ada6';ctx.font='14px sans-serif';ctx.fillText('(空白)',W/2,curY+imgH/2+5);}
-        curY+=imgH+8;
-      }else{
-        ctx.fillStyle='rgba(139,106,174,0.08)';shareRoundRect(ctx,padding,curY,contentW,38,8);ctx.fill();
-        ctx.fillStyle='#3d3535';ctx.font='bold 18px "Zen Maru Gothic",sans-serif';ctx.textAlign='center';
-        ctx.fillText(e.content||'',W/2,curY+25);curY+=48;
-      }
-      curY+=16+entryGap;
-    });
-    curY+=chainGap;
-  });
-  ctx.fillStyle='#b5ada6';ctx.font='11px sans-serif';ctx.textAlign='center';
-  ctx.fillText('The画伯 — お絵描き伝言ゲーム',W/2,H-12);
-  c.toBlob(function(blob){callback(blob,c.toDataURL('image/png'));},'image/png');
-}
+// Blobダウンロードヘルパー
+function downloadBlob(blob,fn){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},100);}
 
 function shareRoundRect(ctx,x,y,w,h,r){
   ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -718,49 +745,91 @@ function shareRoundRect(ctx,x,y,w,h,r){
   ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
 
-function handleShareAll(){
-  if(!shareLastChains)return;
-  var btn=document.getElementById('btnShare');
-  if(btn){btn.disabled=true;btn.textContent='⏳ 画像を生成中...';}
-  generateShareImage(shareLastChains,function(blob,dataUrl){
-    if(btn){btn.disabled=false;btn.textContent='📤 この結果を共有する';}
-    if(canNativeShare()){
-      var file=new File([blob],'telestrations.png',{type:'image/png'});
-      if(navigator.canShare({files:[file]})){navigator.share({files:[file],title:'The画伯結果'}).catch(function(){});return;}
-    }
-    shareDownloadImage(dataUrl);showShareToast('画像を保存しました');
-  });
-}
-
-function handleShareGmail(){
-  if(!shareLastChains)return;
-  var subject='The画伯結果';
-  var body='The画伯の結果\n\n';
-  shareLastChains.forEach(function(chain){
-    body+='--- '+chain.topicPlayerName+' さんのお題 ---\n';
-    chain.entries.forEach(function(e){
-      if(e.type==='drawing'){body+='🎨 '+e.playerName+' が描いた\n';}
-      else{var label=e.type==='topic'?'📌 お題':'💬 回答';body+=label+'：'+e.content+' ('+e.playerName+')\n';}
+// チェインごとの共有（キャッシュBlobから同期的にshare()呼び出し）
+function shareChain(chainIdx){
+  var blob=chainImageCache[chainIdx];
+  if(!blob){showShareToast('⏳ 画像を準備中…もう一度タップ');preGenerateChainImage(chainIdx);return;}
+  var file=new File([blob],'telestrations.png',{type:'image/png'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file]}).catch(function(e){
+      if(e.name!=='AbortError'){downloadBlob(blob,'telestrations.png');showShareToast('✓ 画像を保存しました');}
     });
-    body+='\n';
-  });
-  window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank');
+  }else{downloadBlob(blob,'telestrations.png');showShareToast('✓ 画像を保存しました');}
 }
 
-function handleShareDownload(){
+// 画像保存（ダウンロード）— キャッシュBlobを直接使用
+function shareChainDownload(chainIdx){
+  var blob=chainImageCache[chainIdx];
+  if(!blob){showShareToast('⏳ 画像を準備中…もう一度タップ');preGenerateChainImage(chainIdx);return;}
+  downloadBlob(blob,'telestrations.png');
+  showShareToast('✓ 画像を保存しました');
+}
+
+// チェイン画像を事前生成してキャッシュに格納（バックグラウンド非同期）
+function preGenerateChainImage(chainIdx){
+  if(chainImageCache[chainIdx])return;
+  if(!shareLastChains||!shareLastChains[chainIdx])return;
+  var chain=shareLastChains[chainIdx];
+  var W=600,PAD=24,CONTENT_W=W-PAD*2,GAP=16;
+  var imagePromises=[];
+  for(var i=0;i<chain.entries.length;i++){
+    var e=chain.entries[i];
+    if(e.type==='drawing'&&e.content){
+      (function(idx,src){
+        imagePromises.push(new Promise(function(resolve){
+          var img=new Image();
+          img.onload=function(){resolve({idx:idx,img:img});};
+          img.onerror=function(){resolve({idx:idx,img:null});};
+          img.src=src;
+        }));
+      })(i,e.content);
+    }
+  }
+  Promise.all(imagePromises).then(function(loadedImages){
+    var imgMap={};
+    for(var k=0;k<loadedImages.length;k++)imgMap[loadedImages[k].idx]=loadedImages[k].img;
+    var y=PAD;y+=32+GAP;
+    for(var i=0;i<chain.entries.length;i++){
+      var e=chain.entries[i];y+=20+4;
+      if(e.type==='drawing'){y+=Math.round(CONTENT_W*3/4)+GAP;}else{y+=48+GAP;}
+    }
+    y+=PAD;
+    var cv=document.createElement('canvas');cv.width=W;cv.height=y;
+    var ctx=cv.getContext('2d');
+    ctx.fillStyle='#faf7f2';ctx.fillRect(0,0,W,y);
+    var drawY=PAD;
+    ctx.fillStyle='#8b6aae';ctx.font='bold 22px "Zen Maru Gothic","Segoe UI","Hiragino Sans",sans-serif';ctx.textAlign='center';
+    ctx.fillText(chain.topicPlayerName+' のお題',W/2,drawY+24);drawY+=32+GAP;
+    for(var i=0;i<chain.entries.length;i++){
+      var e=chain.entries[i];
+      var label=i===0?'📝 お題':e.type==='drawing'?'🎨 お絵描き':'💬 回答';
+      label+=' — '+e.playerName;
+      ctx.fillStyle='#8a807a';ctx.font='13px "Zen Maru Gothic","Segoe UI","Hiragino Sans",sans-serif';ctx.textAlign='center';
+      ctx.fillText(label,W/2,drawY+14);drawY+=20+4;
+      if(e.type==='drawing'){
+        var imgH=Math.round(CONTENT_W*3/4);
+        ctx.fillStyle='#fffef5';shareRoundRect(ctx,PAD,drawY,CONTENT_W,imgH,8);ctx.fill();
+        ctx.strokeStyle='#e8e2d9';ctx.lineWidth=1;shareRoundRect(ctx,PAD,drawY,CONTENT_W,imgH,8);ctx.stroke();
+        var img=imgMap[i];
+        if(img){ctx.save();shareRoundRect(ctx,PAD,drawY,CONTENT_W,imgH,8);ctx.clip();ctx.drawImage(img,PAD,drawY,CONTENT_W,imgH);ctx.restore();}
+        drawY+=imgH+GAP;
+      }else{
+        ctx.fillStyle='rgba(139,106,174,0.08)';shareRoundRect(ctx,PAD,drawY,CONTENT_W,44,8);ctx.fill();
+        ctx.fillStyle='#3d3535';ctx.font='bold 18px "Zen Maru Gothic","Segoe UI","Hiragino Sans",sans-serif';ctx.textAlign='center';
+        ctx.fillText(e.content||'(時間切れ)',W/2,drawY+28);drawY+=48+GAP;
+      }
+    }
+    ctx.fillStyle='#b5ada6';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('The画伯 — お絵描き伝言ゲーム',W/2,y-8);
+    // Blobとしてキャッシュ（タップ時にFile変換→share()を同期的に呼べる）
+    cv.toBlob(function(blob){if(blob)chainImageCache[chainIdx]=blob;},'image/png');
+  });
+}
+// 全チェインの画像を事前生成
+function preGenerateAllChainImages(){
+  chainImageCache={};
   if(!shareLastChains)return;
-  var btn=document.getElementById('btnDownload');
-  var origText=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='⏳ 画像を生成中...';}
-  generateShareImage(shareLastChains,function(blob,dataUrl){
-    if(btn){btn.disabled=false;btn.textContent=origText;}
-    shareDownloadImage(dataUrl);showShareToast('✓ 画像を保存しました');
-  });
-}
-
-function shareDownloadImage(dataUrl){
-  var a=document.createElement('a');a.href=dataUrl;a.download='telestrations.png';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  for(var i=0;i<shareLastChains.length;i++)preGenerateChainImage(i);
 }
 
 function showShareToast(msg){
